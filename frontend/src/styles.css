@@ -1,0 +1,359 @@
+/* ============================================
+   Spovie — デザイントークン
+   コンセプト: 体育館の床 × スコアボード
+   - 背景: 深いコートグリーンに寄せたダークトーン
+   - アクセント: スコアボードオレンジ
+   ============================================ */
+:root {
+  --bg: #101513;
+  --bg-elev: #1a221e;
+  --bg-card: #1f2925;
+  --line: #2e3b35;
+  --text: #eef3f0;
+  --text-dim: #9aab a2;
+  --text-dim: #9aaba2;
+  --accent: #ff8a3d;        /* スコアボードオレンジ */
+  --accent-press: #e6792f;
+  --danger: #e5534b;
+  --radius: 10px;
+  --font: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.6;
+}
+
+/* ----- レイアウト ----- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-elev);
+}
+
+.brand {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  text-decoration: none;
+}
+.brand span { color: var(--accent); }
+
+.container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 20px;
+}
+
+/* ----- フォーム ----- */
+.auth-card {
+  max-width: 400px;
+  margin: 8vh auto 0;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 32px 28px;
+}
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 15px;
+  font-family: var(--font);
+}
+.field input:focus,
+.field textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ----- ボタン ----- */
+.btn {
+  display: inline-block;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+.btn-primary { background: var(--accent); color: #1c1208; }
+.btn-primary:hover { background: var(--accent-press); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--line);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+.btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+.btn-block { width: 100%; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+
+/* ----- カード ----- */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card img { width: 100%; display: block; aspect-ratio: 16/9; object-fit: cover; }
+.card-body { padding: 14px 16px; }
+.card-title { font-size: 15px; font-weight: 600; margin: 0 0 4px; }
+.card-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 12px; }
+.card-actions { display: flex; gap: 8px; }
+
+/* ----- アノテーション画面 ----- */
+.player-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.player-wrap > div:first-child,
+.player-wrap iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.canvas-layer { position: absolute; inset: 0; z-index: 5; }
+.canvas-layer.pass-through { pointer-events: none; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 14px 0;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.toolbar .label { font-size: 12px; color: var(--text-dim); margin-right: 4px; }
+.tool-btn {
+  padding: 8px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 14px;
+}
+.tool-btn.active { border-color: var(--accent); color: var(--accent); }
+
+.color-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.color-dot.active { border-color: var(--text); }
+
+.seconds-input {
+  width: 90px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+/* ----- リスト ----- */
+.anno-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+}
+.anno-range {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 15px;
+  white-space: nowrap;
+}
+.anno-comment { font-size: 14px; color: var(--text-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ----- その他 ----- */
+.error-msg { color: var(--danger); font-size: 13px; margin: 10px 0; }
+.empty {
+  text-align: center;
+  color: var(--text-dim);
+  padding: 60px 0;
+}
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #1c1208;
+  padding: 10px 20px;
+  border-radius: 99px;
+  font-weight: 600;
+  font-size: 14px;
+  z-index: 100;
+}
+.link { color: var(--accent); text-decoration: none; }
+.link:hover { text-decoration: underline; }
+.muted { color: var(--text-dim); font-size: 13px; }
+
+@media (max-width: 600px) {
+  .container { padding: 20px 14px 48px; }
+  .toolbar { gap: 6px; }
+}
+
+/* ----- アップロード（drag & drop） ----- */
+.upload-drop {
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 36px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.upload-drop:hover,
+.upload-drop.dragging {
+  border-color: var(--accent);
+  background: var(--bg-card);
+}
+
+.upload-progress {
+  height: 8px;
+  background: var(--bg-card);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+.upload-progress > div {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s;
+}
+
+/* ----- タブ切り替え ----- */
+.mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+  width: fit-content;
+}
+.mode-tab {
+  padding: 10px 20px;
+  background: var(--bg-card);
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: var(--font);
+}
+.mode-tab.active {
+  background: var(--accent);
+  color: #1c1208;
+  font-weight: 600;
+}
+
+/* ----- モーダル ----- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 20px;
+}
+.modal {
+  background: var(--bg-elev);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+}
+
+/* ----- スピナー ----- */
+.spinner {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border: 3px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 2s; }
+}
+
+/* ----- 動画カードのサムネイル ----- */
+.card video {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  background: #000;
+}
+.thumb-fallback {
+  width: 100%;
+  aspect-ratio: 16/9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  background: var(--bg);
+}
