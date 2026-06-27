@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import type { Clip } from '../types';
+import { formatTime } from '../utils/time';
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000;
@@ -56,7 +57,7 @@ export function ClipStatusPage() {
       <Link to="/" className="link muted">← 動画一覧に戻る</Link>
       <h1 className="page-title" style={{ marginTop: 12 }}>{clip.title}</h1>
       <p className="anno-range" style={{ marginBottom: 20 }}>
-        {clip.start_seconds}s — {clip.end_seconds}s
+        {formatTime(clip.start_seconds)} — {formatTime(clip.end_seconds)}
       </p>
 
       {clip.status === 'processing' && !timedOut && (

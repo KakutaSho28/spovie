@@ -1,7 +1,8 @@
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { FileUploadInput } from '../components/FileUploadInput';
+import type { Team } from '../types';
 
 type Mode = 'youtube' | 'upload';
 
@@ -20,8 +21,14 @@ export function VideoNewPage() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [teamId, setTeamId] = useState('');
 
   const previewId = useMemo(() => extractYoutubeVideoId(url), [url]);
+
+  useEffect(() => {
+    apiClient.get('/teams').then((res) => setTeams(res.data.data));
+  }, []);
 
   const handleYoutubeSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,7 +39,11 @@ export function VideoNewPage() {
     }
     setLoading(true);
     try {
-      const res = await apiClient.post('/videos', { title, youtube_url: url });
+      const res = await apiClient.post('/videos', {
+        title,
+        youtube_url: url,
+        team_id: teamId ? Number(teamId) : null,
+      });
       navigate(`/videos/${res.data.data.id}/annotations`);
     } catch {
       setError('登録に失敗しました。URLとタイトルを確認してください。');
@@ -53,6 +64,9 @@ export function VideoNewPage() {
       const formData = new FormData();
       formData.append('title', title);
       formData.append('file', file);
+      if (teamId) {
+        formData.append('team_id', teamId);
+      }
       const res = await apiClient.post('/videos/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         onUploadProgress: (event) => {
@@ -104,6 +118,16 @@ export function VideoNewPage() {
             required
             maxLength={255}
           />
+        </div>
+
+        <div className="field">
+          <label htmlFor="team-id">追加先</label>
+          <select id="team-id" value={teamId} onChange={(e) => setTeamId(e.target.value)}>
+            <option value="">個人で追加</option>
+            {teams.map((team) => (
+              <option key={team.id} value={team.id}>{team.name}</option>
+            ))}
+          </select>
         </div>
 
         {mode === 'youtube' ? (

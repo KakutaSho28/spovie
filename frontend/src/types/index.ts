@@ -8,6 +8,7 @@ export type Video = {
   youtube_video_id: string | null;
   file_url: string | null;
   title: string;
+  team: Pick<Team, 'id' | 'name'> | null;
   created_at: string;
 };
 
@@ -32,6 +33,7 @@ export type Annotation = {
   end_seconds: number;
   canvas_data: CanvasData;
   comment: string | null;
+  comments_count?: number;
   created_at: string;
 };
 
@@ -79,4 +81,37 @@ export type AuthUser = {
   id: number;
   name: string;
   email: string;
+};
+
+export type TeamMemberRole = 'owner' | 'member';
+
+export type TeamMember = {
+  id: number;
+  name: string;
+  email?: string;
+  role: TeamMemberRole;
+};
+
+export type Team = {
+  id: number;
+  name: string;
+  invite_token: string;
+  invite_url: string;
+  owner: {
+    id: number;
+    name: string;
+  };
+  members: TeamMember[];
+  created_at: string;
+};
+
+export type Comment = {
+  id: number;
+  body: string;
+  user: {
+    id: number;
+    name: string;
+  };
+  is_own: boolean;
+  created_at: string;
 };

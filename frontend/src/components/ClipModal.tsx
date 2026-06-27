@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiClient } from '../api/client';
 import type { Clip } from '../types';
+import { TimeInput } from './TimeInput';
 
 const POLL_INTERVAL_MS = 3000;
 const POLL_TIMEOUT_MS = 10 * 60 * 1000; // 10分でタイムアウト
@@ -32,6 +33,8 @@ export function ClipModal({
   const [downloadUrl, setDownloadUrl] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [startTimeValid, setStartTimeValid] = useState(true);
+  const [endTimeValid, setEndTimeValid] = useState(true);
   const pollRef = useRef<number>();
   const timeoutRef = useRef<number>();
 
@@ -67,8 +70,12 @@ export function ClipModal({
 
   const handleSubmit = async () => {
     setError('');
+    if (!startTimeValid || !endTimeValid) {
+      setError('時刻は 0:00 の形式で入力してください');
+      return;
+    }
     if (endSeconds <= startSeconds) {
-      setError('終了秒数は開始秒数より大きくしてください');
+      setError('終了時刻は開始時刻より後にしてください');
       return;
     }
     setPhase('processing');
@@ -114,24 +121,20 @@ export function ClipModal({
               />
             </div>
             <div className="field">
-              <label>切り抜き区間（秒）</label>
+              <label>切り抜き区間</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  className="seconds-input"
-                  type="number"
-                  min={0}
+                <TimeInput
                   value={startSeconds}
-                  onChange={(e) => setStartSeconds(Number(e.target.value))}
-                  aria-label="開始秒数"
+                  onChange={setStartSeconds}
+                  onValidityChange={setStartTimeValid}
+                  ariaLabel="開始時刻"
                 />
                 <span className="muted">〜</span>
-                <input
-                  className="seconds-input"
-                  type="number"
-                  min={1}
+                <TimeInput
                   value={endSeconds}
-                  onChange={(e) => setEndSeconds(Number(e.target.value))}
-                  aria-label="終了秒数"
+                  onChange={setEndSeconds}
+                  onValidityChange={setEndTimeValid}
+                  ariaLabel="終了時刻"
                 />
               </div>
             </div>

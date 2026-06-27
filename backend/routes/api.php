@@ -3,7 +3,9 @@
 use App\Http\Controllers\AnnotationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClipController;
+use App\Http\Controllers\CommentController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\TeamController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
@@ -28,10 +30,26 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/videos/upload', [VideoUploadController::class, 'store']);
     Route::delete('/videos/{video}', [VideoController::class, 'destroy']);
 
+    // チーム（F17）
+    Route::get('/teams', [TeamController::class, 'index']);
+    Route::post('/teams', [TeamController::class, 'store']);
+    Route::get('/teams/invite/{token}', [TeamController::class, 'invite']);
+    Route::get('/teams/{team}', [TeamController::class, 'show']);
+    Route::delete('/teams/{team}', [TeamController::class, 'destroy']);
+    Route::post('/teams/{team}/join', [TeamController::class, 'join']);
+    Route::delete('/teams/{team}/members/me', [TeamController::class, 'leave']);
+    Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember']);
+    Route::get('/teams/{team}/videos', [TeamController::class, 'videos']);
+
     // アノテーション（ANNOTATION-01〜03）
     Route::get('/videos/{video}/annotations', [AnnotationController::class, 'index']);
     Route::post('/videos/{video}/annotations', [AnnotationController::class, 'store']);
     Route::delete('/annotations/{annotation}', [AnnotationController::class, 'destroy']);
+
+    // コメント（F18）
+    Route::get('/annotations/{annotation}/comments', [CommentController::class, 'index']);
+    Route::post('/annotations/{annotation}/comments', [CommentController::class, 'store']);
+    Route::delete('/comments/{comment}', [CommentController::class, 'destroy']);
 
     // 共有リンク発行（SHARE-01）
     Route::post('/annotations/{annotation}/share', [ShareController::class, 'store']);

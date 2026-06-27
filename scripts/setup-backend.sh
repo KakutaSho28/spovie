@@ -27,8 +27,11 @@ sed -i.bak \
   -e 's/^DB_DATABASE=.*/DB_DATABASE=spovie_db/' \
   -e 's/^DB_USERNAME=.*/DB_USERNAME=spovie_user/' \
   -e 's/^DB_PASSWORD=.*/DB_PASSWORD=spovie_pass/' \
+  -e 's/^FILESYSTEM_DISK=.*/FILESYSTEM_DISK=public/' \
   -e 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=database/' \
   backend/.env && rm backend/.env.bak
+
+grep -q '^APP_FRONTEND_URL=' backend/.env || printf '\nAPP_FRONTEND_URL=http://localhost:5173\n' >> backend/.env
 
 echo "▶ 4/6 アプリケーションキーを生成中..."
 if ! grep -q '^APP_KEY=base64:' backend/.env; then

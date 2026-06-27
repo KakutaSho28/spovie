@@ -16,8 +16,18 @@ class VideoController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $videos = $request->user()
-            ->videos()
+        $user = $request->user();
+        $teamIds = $user->teams()->pluck('teams.id');
+
+        $videos = Video::query()
+            ->with('team')
+            ->where(function ($query) use ($user, $teamIds) {
+                $query
+                    ->where(function ($personal) use ($user) {
+                        $personal->where('user_id', $user->id)->whereNull('team_id');
+                    })
+                    ->orWhereIn('team_id', $teamIds);
+            })
             ->orderByDesc('created_at')
             ->paginate($request->integer('per_page', 20));
 
@@ -29,9 +39,15 @@ class VideoController extends Controller
      */
     public function store(StoreVideoRequest $request): JsonResponse
     {
+        if (! $this->canUseTeam($request)) {
+            return response()->json(['message' => 'このチームに動画を追加できません'], 403);
+        }
+
         $videoId = $this->extractYoutubeVideoId($request->youtube_url);
 
         $video = $request->user()->videos()->create([
+            'team_id' => $request->team_id,
+            'type' => Video::TYPE_YOUTUBE,
             'youtube_video_id' => $videoId,
             'title' => $request->title,
         ]);
@@ -46,7 +62,7 @@ class VideoController extends Controller
      */
     public function destroy(Request $request, Video $video): JsonResponse
     {
-        if ($video->user_id !== $request->user()->id) {
+        if (! $this->canManageVideo($request, $video)) {
             return response()->json(['message' => 'この操作は許可されていません'], 403);
         }
 
@@ -64,5 +80,30 @@ class VideoController extends Controller
         preg_match('/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/', $url, $matches);
 
         return $matches[1];
+    }
+
+    private function canUseTeam(StoreVideoRequest $request): bool
+    {
+        if (! $request->team_id) {
+            return true;
+        }
+
+        return $request->user()
+            ->teams()
+            ->where('teams.id', $request->team_id)
+            ->exists();
+    }
+
+    private function canManageVideo(Request $request, Video $video): bool
+    {
+        if ($video->team_id) {
+            return $video->team()->whereHas('memberships', function ($query) use ($request) {
+                $query
+                    ->where('user_id', $request->user()->id)
+                    ->where('role', 'owner');
+            })->exists();
+        }
+
+        return $video->user_id === $request->user()->id;
     }
 }

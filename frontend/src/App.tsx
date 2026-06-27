@@ -9,6 +9,10 @@ import { AnnotationsPage } from './pages/Annotations';
 import { AnnotatePage } from './pages/Annotate';
 import { ClipStatusPage } from './pages/ClipStatus';
 import { SharePage } from './pages/Share';
+import { TeamsPage } from './pages/Teams';
+import { TeamNewPage } from './pages/TeamNew';
+import { TeamDetailPage } from './pages/TeamDetail';
+import { TeamJoinPage } from './pages/TeamJoin';
 
 /** 認証ガード：未ログインなら S01 へ */
 function RequireAuth() {
@@ -41,6 +45,10 @@ export function App() {
             <Route path="/videos/:videoId/annotations" element={<AnnotationsPage />} />
             <Route path="/videos/:videoId/annotate" element={<AnnotatePage />} />
             <Route path="/clips/:clipId" element={<ClipStatusPage />} />
+            <Route path="/teams" element={<TeamsPage />} />
+            <Route path="/teams/new" element={<TeamNewPage />} />
+            <Route path="/teams/join/:token" element={<TeamJoinPage />} />
+            <Route path="/teams/:teamId" element={<TeamDetailPage />} />
           </Route>
         </Route>
 

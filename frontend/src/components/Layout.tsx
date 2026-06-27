@@ -21,9 +21,13 @@ export function Layout() {
         <Link to="/" className="brand">
           Spo<span>vie</span>
         </Link>
-        <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
-          ログアウト
-        </button>
+        <nav className="app-nav">
+          <Link to="/" className="link">動画</Link>
+          <Link to="/teams" className="link">チーム</Link>
+          <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
+            ログアウト
+          </button>
+        </nav>
       </header>
       <main className="container">
         <Outlet />

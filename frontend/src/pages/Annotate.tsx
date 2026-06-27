@@ -7,6 +7,7 @@ import {
   DrawTool,
 } from '../components/AnnotationCanvas';
 import { ClipModal } from '../components/ClipModal';
+import { TimeInput } from '../components/TimeInput';
 import { useHtml5VideoLoop } from '../hooks/useHtml5VideoLoop';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import type { Annotation, Video } from '../types';
@@ -31,6 +32,8 @@ export function AnnotatePage() {
   const [drawing, setDrawing] = useState(false);
   const [clipModalOpen, setClipModalOpen] = useState(false);
   const [savedAnnotationId, setSavedAnnotationId] = useState<number | null>(null);
+  const [startTimeValid, setStartTimeValid] = useState(true);
+  const [endTimeValid, setEndTimeValid] = useState(true);
 
   const canvasRef = useRef<AnnotationCanvasHandle>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -95,6 +98,15 @@ export function AnnotatePage() {
       }
       setLooping(false);
     } else {
+      setError('');
+      if (!startTimeValid || !endTimeValid) {
+        setError('時刻は 0:00 の形式で入力してください');
+        return;
+      }
+      if (endSeconds <= startSeconds) {
+        setError('終了時刻は開始時刻より後にしてください');
+        return;
+      }
       setLooping(true);
       if (isUpload && html5VideoRef.current) {
         html5VideoRef.current.currentTime = startSeconds;
@@ -120,8 +132,12 @@ export function AnnotatePage() {
   /** アノテーションを保存し、保存したIDを返す */
   const saveAnnotation = async (): Promise<number | null> => {
     setError('');
+    if (!startTimeValid || !endTimeValid) {
+      setError('時刻は 0:00 の形式で入力してください');
+      return null;
+    }
     if (endSeconds <= startSeconds) {
-      setError('終了秒数は開始秒数より大きくしてください');
+      setError('終了時刻は開始時刻より後にしてください');
       return null;
     }
     const canvasData = canvasRef.current?.toCanvasData();
@@ -209,22 +225,18 @@ export function AnnotatePage() {
       {/* ループ設定 */}
       <div className="toolbar">
         <span className="label">ループ</span>
-        <input
-          className="seconds-input"
-          type="number"
-          min={0}
+        <TimeInput
           value={startSeconds}
-          onChange={(e) => setStartSeconds(Number(e.target.value))}
-          aria-label="開始秒数"
+          onChange={setStartSeconds}
+          onValidityChange={setStartTimeValid}
+          ariaLabel="開始時刻"
         />
         <span className="muted">〜</span>
-        <input
-          className="seconds-input"
-          type="number"
-          min={1}
+        <TimeInput
           value={endSeconds}
-          onChange={(e) => setEndSeconds(Number(e.target.value))}
-          aria-label="終了秒数"
+          onChange={setEndSeconds}
+          onValidityChange={setEndTimeValid}
+          ariaLabel="終了時刻"
         />
         <button className="btn btn-primary btn-sm" onClick={handleLoopToggle}>
           {looping ? '停止' : 'ループ再生'}

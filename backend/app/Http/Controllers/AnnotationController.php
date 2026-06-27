@@ -17,11 +17,14 @@ class AnnotationController extends Controller
      */
     public function index(Request $request, Video $video): AnonymousResourceCollection|JsonResponse
     {
-        if ($video->user_id !== $request->user()->id) {
+        if (! $video->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'この操作は許可されていません'], 403);
         }
 
-        $annotations = $video->annotations()->orderByDesc('created_at')->get();
+        $annotations = $video->annotations()
+            ->withCount('comments')
+            ->orderByDesc('created_at')
+            ->get();
 
         return AnnotationResource::collection($annotations);
     }
@@ -31,7 +34,7 @@ class AnnotationController extends Controller
      */
     public function store(StoreAnnotationRequest $request, Video $video): JsonResponse
     {
-        if ($video->user_id !== $request->user()->id) {
+        if (! $video->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'この操作は許可されていません'], 403);
         }
 
@@ -47,7 +50,7 @@ class AnnotationController extends Controller
      */
     public function destroy(Request $request, Annotation $annotation): JsonResponse
     {
-        if ($annotation->video->user_id !== $request->user()->id) {
+        if (! $annotation->video->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'この操作は許可されていません'], 403);
         }
 

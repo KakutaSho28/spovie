@@ -16,6 +16,7 @@ class Video extends Model
 
     protected $fillable = [
         'user_id',
+        'team_id',
         'type',
         'youtube_video_id',
         'file_path',
@@ -25,6 +26,11 @@ class Video extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function team(): BelongsTo
+    {
+        return $this->belongsTo(Team::class);
     }
 
     public function annotations(): HasMany
@@ -40,5 +46,16 @@ class Video extends Model
     public function isUpload(): bool
     {
         return $this->type === self::TYPE_UPLOAD;
+    }
+
+    public function canBeAccessedBy(User $user): bool
+    {
+        if ($this->team_id) {
+            return $this->team()->whereHas('memberships', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })->exists();
+        }
+
+        return $this->user_id === $user->id;
     }
 }

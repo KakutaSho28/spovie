@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
+import { CommentThread } from '../components/CommentThread';
 import type { Annotation } from '../types';
+import { formatTime } from '../utils/time';
 
 export function AnnotationsPage() {
   const { videoId } = useParams<{ videoId: string }>();
@@ -9,6 +11,7 @@ export function AnnotationsPage() {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState('');
+  const [openComments, setOpenComments] = useState<number | null>(null);
 
   const fetchAnnotations = async () => {
     const res = await apiClient.get(`/videos/${videoId}/annotations`);
@@ -63,25 +66,34 @@ export function AnnotationsPage() {
         </div>
       ) : (
         annotations.map((a) => (
-          <div className="anno-item" key={a.id}>
-            <span className="anno-range">
-              {a.start_seconds}s — {a.end_seconds}s
-            </span>
-            <span className="anno-comment">{a.comment ?? '（コメントなし）'}</span>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => navigate(`/videos/${videoId}/annotate?annotationId=${a.id}`)}
-              >
-                開く
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => handleShare(a)}>
-                共有
-              </button>
-              <button className="btn btn-danger btn-sm" onClick={() => handleDelete(a)}>
-                削除
-              </button>
+          <div className="anno-item anno-item-stacked" key={a.id}>
+            <div className="anno-row">
+              <span className="anno-range">
+                {formatTime(a.start_seconds)} — {formatTime(a.end_seconds)}
+              </span>
+              <span className="anno-comment">{a.comment ?? '（コメントなし）'}</span>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setOpenComments(openComments === a.id ? null : a.id)}
+                >
+                  コメントを見る（{a.comments_count ?? 0}件）
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => navigate(`/videos/${videoId}/annotate?annotationId=${a.id}`)}
+                >
+                  開く
+                </button>
+                <button className="btn btn-ghost btn-sm" onClick={() => handleShare(a)}>
+                  共有
+                </button>
+                <button className="btn btn-danger btn-sm" onClick={() => handleDelete(a)}>
+                  削除
+                </button>
+              </div>
             </div>
+            {openComments === a.id && <CommentThread annotationId={a.id} />}
           </div>
         ))
       )}

@@ -20,6 +20,7 @@ class StoreVideoRequest extends FormRequest
                 'url',
                 'regex:/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/',
             ],
+            'team_id' => ['nullable', 'integer', 'exists:teams,id'],
         ];
     }
 

@@ -31,11 +31,32 @@ class ProcessClipJob implements ShouldQueue
             return;
         }
 
-        $inputPath = Storage::disk('public')->path($clip->video->file_path);
-        $outputRelative = 'clips/' . Str::uuid() . '.mp4';
-        $outputPath = Storage::disk('public')->path($outputRelative);
+        $diskName = config('filesystems.default');
+        $disk = Storage::disk($diskName);
+        $tempInputPath = null;
+        $tempOutputPath = null;
 
-        Storage::disk('public')->makeDirectory('clips');
+        if ($diskName === 'public' || $diskName === 'local') {
+            $inputPath = $disk->path($clip->video->file_path);
+            $disk->makeDirectory('clips');
+            $outputRelative = 'clips/' . Str::uuid() . '.mp4';
+            $outputPath = $disk->path($outputRelative);
+        } else {
+            $inputStream = $disk->readStream($clip->video->file_path);
+            if (! $inputStream) {
+                $clip->update(['status' => Clip::STATUS_ERROR]);
+                return;
+            }
+
+            $tempInputPath = sys_get_temp_dir() . '/' . Str::uuid() . '.mp4';
+            $tempOutputPath = sys_get_temp_dir() . '/' . Str::uuid() . '.mp4';
+            file_put_contents($tempInputPath, stream_get_contents($inputStream));
+            fclose($inputStream);
+
+            $inputPath = $tempInputPath;
+            $outputPath = $tempOutputPath;
+            $outputRelative = 'clips/' . Str::uuid() . '.mp4';
+        }
 
         // -c copy で再エンコードなしの高速切り抜き
         $process = new Process([
@@ -51,6 +72,10 @@ class ProcessClipJob implements ShouldQueue
         $process->run();
 
         if ($process->isSuccessful() && file_exists($outputPath)) {
+            if ($diskName !== 'public' && $diskName !== 'local') {
+                $disk->put($outputRelative, file_get_contents($outputPath));
+            }
+
             $clip->update([
                 'file_path' => $outputRelative,
                 'status' => Clip::STATUS_DONE,
@@ -61,6 +86,12 @@ class ProcessClipJob implements ShouldQueue
                 'stderr' => $process->getErrorOutput(),
             ]);
             $clip->update(['status' => Clip::STATUS_ERROR]);
+        }
+
+        foreach ([$tempInputPath, $tempOutputPath] as $tempPath) {
+            if ($tempPath && file_exists($tempPath)) {
+                unlink($tempPath);
+            }
         }
     }
 

@@ -17,6 +17,7 @@ class UploadVideoRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             // 500MB = 512000KB
             'file' => ['required', 'file', 'mimetypes:video/mp4', 'max:512000'],
+            'team_id' => ['nullable', 'integer', 'exists:teams,id'],
         ];
     }
 

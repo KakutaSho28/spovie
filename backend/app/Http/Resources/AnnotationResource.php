@@ -16,6 +16,7 @@ class AnnotationResource extends JsonResource
             'end_seconds' => $this->end_seconds,
             'canvas_data' => $this->canvas_data,
             'comment' => $this->comment,
+            'comments_count' => $this->whenCounted('comments'),
             'created_at' => $this->created_at->toIso8601String(),
         ];
     }

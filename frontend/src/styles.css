@@ -47,6 +47,11 @@ body {
   text-decoration: none;
 }
 .brand span { color: var(--accent); }
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 
 .container {
   max-width: 960px;
@@ -78,6 +83,7 @@ body {
   margin-bottom: 6px;
 }
 .field input,
+.field select,
 .field textarea {
   width: 100%;
   padding: 10px 12px;
@@ -89,9 +95,19 @@ body {
   font-family: var(--font);
 }
 .field input:focus,
+.field select:focus,
 .field textarea:focus {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+.select-input {
+  min-width: 180px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 14px;
 }
 
 /* ----- ボタン ----- */
@@ -190,14 +206,15 @@ body {
 }
 .color-dot.active { border-color: var(--text); }
 
-.seconds-input {
-  width: 90px;
+.time-input {
+  width: 96px;
   padding: 8px 10px;
   background: var(--bg);
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ----- リスト ----- */
@@ -220,6 +237,68 @@ body {
   white-space: nowrap;
 }
 .anno-comment { font-size: 14px; color: var(--text-dim); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.anno-item-stacked {
+  display: block;
+}
+.anno-row,
+.member-row,
+.comment-item,
+.comment-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.anno-row {
+  justify-content: space-between;
+}
+.member-list,
+.comment-list {
+  display: grid;
+  gap: 8px;
+}
+.member-row,
+.comment-item {
+  justify-content: space-between;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.comment-thread {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.comment-meta {
+  display: flex;
+  gap: 8px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.comment-item p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.comment-form {
+  margin-top: 10px;
+}
+.comment-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--text);
+}
+.team-card {
+  text-decoration: none;
+  color: inherit;
+}
+.section-title {
+  font-size: 16px;
+  margin: 22px 0 10px;
+}
 
 /* ----- その他 ----- */
 .error-msg { color: var(--danger); font-size: 13px; margin: 10px 0; }
@@ -248,6 +327,15 @@ body {
 @media (max-width: 600px) {
   .container { padding: 20px 14px 48px; }
   .toolbar { gap: 6px; }
+  .app-header { padding: 12px 14px; }
+  .app-nav { gap: 10px; }
+  .anno-row,
+  .member-row,
+  .comment-item,
+  .comment-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }
 
 /* ----- アップロード（drag & drop） ----- */

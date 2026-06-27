@@ -1,21 +1,34 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import type { Video } from '../types';
+import type { Team, Video } from '../types';
 
 export function VideosPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [videos, setVideos] = useState<Video[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const teamFilter = searchParams.get('team') ?? 'all';
 
   const fetchVideos = async () => {
-    const res = await apiClient.get('/videos');
-    setVideos(res.data.data);
+    const [videosRes, teamsRes] = await Promise.all([
+      apiClient.get('/videos'),
+      apiClient.get('/teams'),
+    ]);
+    setVideos(videosRes.data.data);
+    setTeams(teamsRes.data.data);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchVideos();
   }, []);
+
+  const filteredVideos = videos.filter((video) => {
+    if (teamFilter === 'all') return true;
+    if (teamFilter === 'personal') return video.team === null;
+    return video.team?.id === Number(teamFilter);
+  });
 
   const handleDelete = async (video: Video) => {
     const ok = window.confirm(
@@ -35,16 +48,34 @@ export function VideosPage() {
         </Link>
       </div>
 
+      <div className="toolbar">
+        <span className="label">表示</span>
+        <select
+          className="select-input"
+          value={teamFilter}
+          onChange={(e) => {
+            const next = e.target.value;
+            setSearchParams(next === 'all' ? {} : { team: next });
+          }}
+        >
+          <option value="all">すべて</option>
+          <option value="personal">個人</option>
+          {teams.map((team) => (
+            <option key={team.id} value={team.id}>{team.name}</option>
+          ))}
+        </select>
+      </div>
+
       {loading ? (
         <p className="muted">読み込み中...</p>
-      ) : videos.length === 0 ? (
+      ) : filteredVideos.length === 0 ? (
         <div className="empty">
           <p>動画がまだありません。</p>
           <Link to="/videos/new" className="btn btn-primary">最初の動画を追加する</Link>
         </div>
       ) : (
         <div className="grid">
-          {videos.map((video) => (
+          {filteredVideos.map((video) => (
             <div className="card" key={video.id}>
               {video.type === 'youtube' && video.youtube_video_id ? (
                 <img
@@ -60,6 +91,7 @@ export function VideosPage() {
                 <p className="card-title">{video.title}</p>
                 <p className="card-meta">
                   {video.type === 'upload' ? '📁 アップロード' : '▶ YouTube'}
+                  {video.team ? ` ・ ${video.team.name}` : ' ・ 個人'}
                   {' ・ '}
                   {new Date(video.created_at).toLocaleDateString('ja-JP')}
                 </p>

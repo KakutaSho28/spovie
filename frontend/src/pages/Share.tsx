@@ -7,6 +7,7 @@ import {
 } from '../components/AnnotationCanvas';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import type { ShareView } from '../types';
+import { formatTime } from '../utils/time';
 
 export function SharePage() {
   const { token } = useParams<{ token: string }>();
@@ -79,7 +80,7 @@ export function SharePage() {
       <main className="container">
         <h1 className="page-title">{view.video.title}</h1>
         <p className="anno-range" style={{ marginBottom: 14 }}>
-          {view.annotation.start_seconds}s — {view.annotation.end_seconds}s ループ再生中
+          {formatTime(view.annotation.start_seconds)} — {formatTime(view.annotation.end_seconds)} ループ再生中
         </p>
 
         <div className="player-wrap" ref={wrapRef}>

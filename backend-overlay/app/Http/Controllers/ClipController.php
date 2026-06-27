@@ -23,7 +23,7 @@ class ClipController extends Controller
     {
         $video = Video::findOrFail($request->video_id);
 
-        if ($video->user_id !== $request->user()->id) {
+        if (! $video->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'この操作は許可されていません'], 403);
         }
 
@@ -55,7 +55,7 @@ class ClipController extends Controller
      */
     public function show(Request $request, Clip $clip): JsonResponse|ClipResource
     {
-        if ($clip->video->user_id !== $request->user()->id) {
+        if (! $clip->video->canBeAccessedBy($request->user())) {
             return response()->json(['message' => 'この操作は許可されていません'], 403);
         }
 
@@ -72,13 +72,15 @@ class ClipController extends Controller
             return response()->json(['message' => 'クリップが見つかりません'], 404);
         }
 
-        if (! Storage::disk('public')->exists($clip->file_path)) {
+        $disk = Storage::disk(config('filesystems.default'));
+
+        if (! $disk->exists($clip->file_path)) {
             return response()->json(['message' => 'クリップが見つかりません'], 404);
         }
 
         $fileName = Str::slug($clip->title, '_') ?: 'clip';
 
-        return Storage::disk('public')->download(
+        return $disk->download(
             $clip->file_path,
             $fileName . '.mp4',
         );
