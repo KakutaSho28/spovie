@@ -7,6 +7,7 @@ import {
   DrawTool,
 } from '../components/AnnotationCanvas';
 import { ClipModal } from '../components/ClipModal';
+import { CommentThread } from '../components/CommentThread';
 import { TimeInput } from '../components/TimeInput';
 import { useHtml5VideoLoop } from '../hooks/useHtml5VideoLoop';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
@@ -322,7 +323,15 @@ export function AnnotatePage() {
 
       {error && <p className="error-msg">{error}</p>}
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+      {/* 保存済みのアノテーションにはコメントスレッドを表示（リアルタイム更新） */}
+      {savedAnnotationId && (
+        <>
+          <h2 className="section-title">コメント</h2>
+          <CommentThread annotationId={savedAnnotationId} />
+        </>
+      )}
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? '保存中...' : '保存する'}
         </button>

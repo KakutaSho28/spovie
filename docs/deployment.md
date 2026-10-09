@@ -54,11 +54,29 @@ flowchart LR
 3. 環境変数（下表）を設定 → Deploy
 4. 発行された URL（例: `https://spovie.vercel.app`）を Railway の `APP_FRONTEND_URL` / `CORS_ALLOWED_ORIGINS` に設定し、Railway を再デプロイ
 
-### 4. 動作確認
+### 4. Pusher Channels（リアルタイム）
+1. https://dashboard.pusher.com → Channels → Create app（Name: `spovie` / Cluster: 日本からは **`ap4`（Tokyo）** が近い / Frontend: React / Backend: Laravel）
+2. App Keys タブで `app_id` / `key` / `secret` / `cluster` を控える
+3. 追加の設定は不要（クライアントイベントの有効化も不要。購読は Laravel の `/api/broadcasting/auth` で認可される）
+4. **Railway（web と worker の両方）**: `BROADCAST_DRIVER=pusher`, `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, `PUSHER_APP_CLUSTER` を設定。
+   通知を実際に Pusher へ送るのは **worker** なので、worker にも必須（worker が動いていないと通知は届かない）
+5. **Vercel**: `VITE_PUSHER_APP_KEY`（= `PUSHER_APP_KEY`）, `VITE_PUSHER_APP_CLUSTER` を設定して **再デプロイ**（Vite はビルド時に値を埋め込むため）
+6. 画面右上に「リアルタイム接続中」と出れば接続成功
+
+### 5. 動作確認
 ```bash
 bash scripts/smoke-test.sh https://<railway-domain>/api https://<vercel-domain>
 ```
 その後ブラウザで: 登録 → YouTube 動画追加 → 描画して保存 → 共有リンクをシークレットウィンドウで開く → mp4 をアップロード → 切り抜き → ダウンロード（← R2/S3 の実接続確認）。
+
+**リアルタイムの2ブラウザ確認**（Pusher 設定後）:
+1. 2 人分のアカウントを用意し、片方でチームを作って招待 URL からもう片方を参加させる
+2. チーム動画にアノテーションを 1 つ作る
+3. ブラウザ A・B（別ウィンドウ / シークレット）で同じ動画の「アノテーション一覧」を開き、両方で「コメントを見る」を開く。両方とも右上が「リアルタイム接続中」になること
+4. A でコメントを投稿 → **B が再読み込みなしで** コメントを表示すること（A の画面には投稿直後に表示され、二重にならない）
+5. A でコメントを削除 → B から消えること
+6. A で新しいアノテーションを保存 → B の一覧に再読み込みなしで追加され、「新しいアノテーションが追加されました」と出ること
+7. チームに属さないユーザーでは、同じチャンネルの購読が拒否される（ブラウザの Network で `/api/broadcasting/auth` が 403）
 
 ### 5. 任意
 - GitHub: `main` / `develop` にブランチ保護（CI 必須）
@@ -100,7 +118,11 @@ bash scripts/smoke-test.sh https://<railway-domain>/api https://<vercel-domain>
 | `MEDIA_URL_TTL_MINUTES` | `60` | 署名付きURLの有効期限 |
 | `MEDIA_TEMPORARY_URLS` | （空） | s3 では自動的に署名URL。公開バケット運用なら `false` |
 
-WP5（Pusher）で追加予定: `BROADCAST_DRIVER=pusher`, `PUSHER_APP_ID`, `PUSHER_APP_KEY`, `PUSHER_APP_SECRET`, `PUSHER_APP_CLUSTER`。
+| `BROADCAST_DRIVER` | `pusher` | **web と worker の両方**。worker が Pusher へ送信する |
+| `PUSHER_APP_ID` | Pusher の app_id | web / worker |
+| `PUSHER_APP_KEY` | Pusher の key | web / worker |
+| `PUSHER_APP_SECRET` | Pusher の secret | web / worker（**秘密情報。Vercel には設定しない**） |
+| `PUSHER_APP_CLUSTER` | `ap4`（Tokyo）など | web / worker |
 
 ### Vercel
 
@@ -108,6 +130,8 @@ WP5（Pusher）で追加予定: `BROADCAST_DRIVER=pusher`, `PUSHER_APP_ID`, `PUS
 |---|---|
 | `VITE_API_BASE_URL` | `https://<railway-domain>/api` |
 | `VITE_MAX_UPLOAD_MB` | `200`（バックエンドの `UPLOAD_MAX_MB` と同じ値） |
+| `VITE_PUSHER_APP_KEY` | Pusher の key（`PUSHER_APP_KEY` と同じ。公開してよい値） |
+| `VITE_PUSHER_APP_CLUSTER` | `ap4` など（`PUSHER_APP_CLUSTER` と同じ） |
 
 ---
 
