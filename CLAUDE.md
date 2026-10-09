@@ -99,6 +99,15 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 - 稼働確認は `GET /api/health`（DB 接続）と `bash scripts/smoke-test.sh <api-url> [frontend-url]`。
 - ダッシュボード操作（Railway / Vercel / R2 / Pusher）は人間が行う。必ず「Manual steps」として手順を出す。
 
+## Realtime（WP5, Pusher Channels）
+
+- イベント（`app/Events`）: `CommentCreated` / `CommentDeleted` → `private-annotation.{id}`、`AnnotationCreated` → `private-video.{id}`。すべて `ShouldBroadcast`（キュー経由で worker が送信）。発火は **Service 内**で `broadcast(new X)->toOthers()`。
+- チャンネル認可は `routes/channels.php`（動画の閲覧権限 = 投稿者 / チームメンバー）。認証エンドポイントは `/api/broadcasting/auth`（`auth:sanctum`）。
+- 通知ペイロードは小さく保つ（Pusher は約10KB上限）。`canvas_data` は含めず、クライアントが再取得する。`is_own` は閲覧者依存なので通知に含めず、クライアントが `user.id` で判定する。
+- フロント: `src/lib/echo.ts`（シングルトン。`VITE_PUSHER_APP_KEY` 未設定なら null でリアルタイム無効）、`src/hooks/useRealtime.ts`（`useChannelEvent` / `useOnReconnect` / `useRealtimeStatus`）。API クライアントは `X-Socket-ID` を付ける。コメントは id で重複排除（`src/lib/commentList.ts`）。再接続したら一覧を取得し直す。
+- テスト: バックエンドは `Event::fake` とダミーキー（Pusher への通信なし）。フロントの E2E は `e2e/helpers/fakePusher.ts` で WebSocket を偽の Pusher サーバーに差し替える（キー不要）。リアルタイムの E2E は Pusher キー設定済みの dev サーバー（ポート 5175）を使う。
+- ローカルで実際の Pusher を試すには `backend/.env`（`BROADCAST_DRIVER=pusher` + `PUSHER_*`）、root `.env`（`VITE_PUSHER_*`）を設定し、queue worker を起動しておく。
+
 ## Copyright policy（変更禁止）
 
 - **YouTube 動画**: アノテーション + 共有リンクのみ。切り抜き・動画データの保存はしない（座標データのみ保存）。
