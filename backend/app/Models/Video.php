@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
+use App\Services\MediaStorageService;
 
 class Video extends Model
 {
@@ -70,7 +70,7 @@ class Video extends Model
             return null;
         }
 
-        return Storage::disk(config('filesystems.default'))->url($this->file_path);
+        return app(MediaStorageService::class)->playbackUrl($this->file_path);
     }
 
     public function canBeAccessedBy(User $user): bool

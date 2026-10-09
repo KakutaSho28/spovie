@@ -7,11 +7,12 @@ use App\Jobs\ProcessClipJob;
 use App\Models\Annotation;
 use App\Models\Clip;
 use App\Models\Video;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ClipService
 {
+    public function __construct(private readonly MediaStorageService $media) {}
+
     /**
      * 切り抜きジョブを作成して dispatch する。
      * 著作権ポリシー: YouTube動画は切り抜き不可（アップロード動画のみ）。
@@ -43,7 +44,7 @@ class ClipService
     {
         $valid = hash_equals((string) $clip->download_token, $token) && $clip->isDone() && $clip->file_path;
 
-        if (! $valid || ! Storage::disk(config('filesystems.default'))->exists($clip->file_path)) {
+        if (! $valid || ! $this->media->exists($clip->file_path)) {
             throw ServiceException::notFound('クリップが見つかりません');
         }
 
