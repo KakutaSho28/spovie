@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ListVideosRequest;
 use App\Http\Requests\StoreVideoRequest;
 use App\Http\Resources\VideoResource;
 use App\Models\Video;
 use App\Services\VideoService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class VideoController extends Controller
@@ -15,11 +15,14 @@ class VideoController extends Controller
     public function __construct(private readonly VideoService $videos) {}
 
     /** VIDEO-01 動画一覧取得 */
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(ListVideosRequest $request): AnonymousResourceCollection
     {
-        return VideoResource::collection(
-            $this->videos->paginateVisibleTo($request->user(), $request->integer('per_page', 20)),
-        );
+        return VideoResource::collection($this->videos->paginateVisibleTo(
+            $request->user(),
+            $request->integer('per_page', 20),
+            $request->input('scope', 'all'),
+            $request->filled('team_id') ? $request->integer('team_id') : null,
+        ));
     }
 
     /** VIDEO-04 動画詳細取得 */

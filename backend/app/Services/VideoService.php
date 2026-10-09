@@ -9,10 +9,26 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class VideoService
 {
-    public function paginateVisibleTo(User $user, int $perPage = 20): LengthAwarePaginator
+    /**
+     * 一覧取得。$teamId があればそのチームの動画のみ（所属チームでなければ 403）、
+     * なければ scope=personal で個人動画のみ、scope=all（既定）で個人 + 所属チーム。
+     */
+    public function paginateVisibleTo(User $user, int $perPage = 20, string $scope = 'all', ?int $teamId = null): LengthAwarePaginator
     {
-        return Video::query()
-            ->visibleTo($user)
+        $query = Video::query();
+
+        if ($teamId !== null) {
+            if (! $user->teams()->where('teams.id', $teamId)->exists()) {
+                throw ServiceException::forbidden();
+            }
+            $query->where('team_id', $teamId);
+        } elseif ($scope === 'personal') {
+            $query->personalOf($user);
+        } else {
+            $query->visibleTo($user);
+        }
+
+        return $query
             ->with('team')
             ->orderByDesc('created_at')
             ->paginate($perPage);
