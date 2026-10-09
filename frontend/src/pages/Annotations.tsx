@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { CommentThread } from '../components/CommentThread';
+import { useChannelEvent, useOnReconnect } from '../hooks/useRealtime';
 import type { Annotation } from '../types';
 import { formatTime } from '../utils/time';
 
@@ -28,6 +29,15 @@ export function AnnotationsPage() {
     setToast(message);
     window.setTimeout(() => setToast(''), 2000);
   };
+
+  // ----- リアルタイム: 他の人が追加したアノテーションを即時反映 -----
+  // 通知は軽量（canvas_data なし）なので、一覧を取得し直す
+  useChannelEvent(`video.${videoId}`, 'annotation.created', () => {
+    fetchAnnotations().then(() => showToast('新しいアノテーションが追加されました'));
+  });
+  useOnReconnect(() => {
+    fetchAnnotations();
+  });
 
   const handleShare = async (annotation: Annotation) => {
     const res = await apiClient.post(`/annotations/${annotation.id}/share`, {

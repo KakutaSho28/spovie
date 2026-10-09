@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getSocketId } from '../lib/realtime';
 import { useAuthStore } from '../store/auth';
 
 export const apiClient = axios.create({
@@ -14,6 +15,11 @@ apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  // 自分の操作を自分の WebSocket に送り返さない（サーバーの toOthers() が参照する）
+  const socketId = getSocketId();
+  if (socketId) {
+    config.headers['X-Socket-ID'] = socketId;
   }
   return config;
 });
