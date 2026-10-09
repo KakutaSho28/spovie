@@ -91,6 +91,14 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 - クリップ生成は `ClipProcessingService`（S3 は一時ファイル経由で FFmpeg、失敗時も一時ファイル削除）。FFmpeg 呼び出しは `App\Support\Ffmpeg`（テストで差し替える）。
 - アップロード上限は `UPLOAD_MAX_MB`（既定 200MB。プロキシのタイムアウト対策）。UI 側は `VITE_MAX_UPLOAD_MB`、nginx/php.ini も合わせる。
 
+## Deploy（WP3）
+
+- `main` への push で Railway（API: `backend/Dockerfile`）と Vercel（SPA: `frontend/`）が自動デプロイされる。手順・環境変数一覧は `docs/deployment.md`。
+- 本番コンテナは起動時に `migrate --force` → `config:cache` → `route:cache`。**ルートにクロージャを使わない**（route:cache が失敗する。`DeploymentConfigTest` が検知）。
+- `env()` は config ファイル内だけで使う。CORS は `CORS_ALLOWED_ORIGINS`（ワイルドカード不可）。
+- 稼働確認は `GET /api/health`（DB 接続）と `bash scripts/smoke-test.sh <api-url> [frontend-url]`。
+- ダッシュボード操作（Railway / Vercel / R2 / Pusher）は人間が行う。必ず「Manual steps」として手順を出す。
+
 ## Copyright policy（変更禁止）
 
 - **YouTube 動画**: アノテーション + 共有リンクのみ。切り抜き・動画データの保存はしない（座標データのみ保存）。
