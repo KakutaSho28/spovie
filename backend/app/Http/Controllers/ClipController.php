@@ -8,7 +8,6 @@ use App\Jobs\ProcessClipJob;
 use App\Models\Clip;
 use App\Models\Video;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -23,9 +22,7 @@ class ClipController extends Controller
     {
         $video = Video::findOrFail($request->video_id);
 
-        if (! $video->canBeAccessedBy($request->user())) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('view', $video);
 
         if (! $video->isUpload()) {
             return response()->json([
@@ -53,22 +50,20 @@ class ClipController extends Controller
      * 切り抜き状態の取得（ポーリング用）
      * GET /api/clips/{clip}
      */
-    public function show(Request $request, Clip $clip): JsonResponse|ClipResource
+    public function show(Clip $clip): ClipResource
     {
-        if (! $clip->video->canBeAccessedBy($request->user())) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('view', $clip);
 
         return new ClipResource($clip);
     }
 
     /**
      * 切り抜き動画のダウンロード（認証不要 = LINE共有用）
-     * GET /api/clips/{clip}/download
+     * GET /api/clips/{clip}/download/{token}
      */
-    public function download(Clip $clip): StreamedResponse|JsonResponse
+    public function download(Clip $clip, string $token): StreamedResponse|JsonResponse
     {
-        if (! $clip->isDone() || ! $clip->file_path) {
+        if (! hash_equals((string) $clip->download_token, $token) || ! $clip->isDone() || ! $clip->file_path) {
             return response()->json(['message' => 'クリップが見つかりません'], 404);
         }
 
