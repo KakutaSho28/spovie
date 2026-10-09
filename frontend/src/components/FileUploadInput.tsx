@@ -1,6 +1,7 @@
 import { DragEvent, useRef, useState } from 'react';
 
-const MAX_SIZE_MB = 500;
+// バックエンドの UPLOAD_MAX_MB と合わせる（本番はプロキシのタイムアウト対策で 200MB）
+const MAX_SIZE_MB = Number(import.meta.env.VITE_MAX_UPLOAD_MB ?? 200);
 
 type Props = {
   file: File | null;
