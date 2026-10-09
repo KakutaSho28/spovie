@@ -56,6 +56,12 @@ class Video extends Model
         });
     }
 
+    /** 個人動画（チームに属さない自分の動画） */
+    public function scopePersonalOf(Builder $query, User $user): Builder
+    {
+        return $query->where('user_id', $user->id)->whereNull('team_id');
+    }
+
     public function isUpload(): bool
     {
         return $this->type === self::TYPE_UPLOAD;
