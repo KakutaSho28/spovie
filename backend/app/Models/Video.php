@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Video extends Model
 {
@@ -46,6 +47,18 @@ class Video extends Model
     public function isUpload(): bool
     {
         return $this->type === self::TYPE_UPLOAD;
+    }
+
+    /**
+     * アップロード動画の再生URL（YouTube動画は null）
+     */
+    public function fileUrl(): ?string
+    {
+        if (! $this->isUpload() || ! $this->file_path) {
+            return null;
+        }
+
+        return Storage::disk(config('filesystems.default'))->url($this->file_path);
     }
 
     public function canBeAccessedBy(User $user): bool

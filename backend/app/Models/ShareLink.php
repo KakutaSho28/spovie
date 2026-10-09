@@ -10,6 +10,9 @@ class ShareLink extends Model
 {
     use HasFactory;
 
+    // share_links テーブルは created_at のみ（updated_at なし）
+    public const UPDATED_AT = null;
+
     protected $fillable = [
         'annotation_id',
         'token',
