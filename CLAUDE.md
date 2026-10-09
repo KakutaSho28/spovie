@@ -19,6 +19,8 @@ backend/            Laravel 本体（コミット済み。overlay 方式は廃�
   app/Http/Controllers/  Auth, Video, VideoUpload, Annotation, Share, Clip, Team, Comment
   app/Http/Requests/     FormRequest（バリデーション）
   app/Http/Resources/    API Resource（レスポンス整形）
+  app/Services/          業務ロジック（Controller から呼ぶ）
+  app/Policies/          認可
   app/Jobs/ProcessClipJob.php  FFmpeg 切り抜き（-c copy）
   app/Models/            User, Video, Annotation, ShareLink, Clip, Team, TeamMember, Comment
   database/factories/    テスト用 Factory
@@ -65,6 +67,21 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 - アノテーション座標は画面サイズに依存しない形で保存し、任意サイズで再描画できること。
 - 新しい環境変数は必ず `.env.example`（root / backend / frontend の該当箇所）に追加する。秘密情報はコミットしない。
 - スコープ外のものは作らない（`claude-code-prompt.md` §5）。
+
+## Backend layering（service-first）
+
+| Layer | 役割 | やらないこと |
+|---|---|---|
+| FormRequest | バリデーションのみ | 認可・業務ロジック |
+| Policy (`app/Policies`) | 認可のみ | クエリ・更新処理 |
+| Controller | 受信 → `$this->authorize()` → Service 呼び出し → Resource を返す。1アクション ~15行まで | 業務ロジック、複数ステップの DB 処理、ファイル処理、トークン生成、ジョブ dispatch |
+| Service (`app/Services`) | 業務ロジックとトランザクション。依存はコンストラクタ注入。業務ルール違反は `ServiceException`（Handler が `{message}` + status に変換） | `Request` オブジェクトを受け取る、JSON を組み立てる |
+| Resource | JSON 整形の唯一の場所 | — |
+
+- 再利用するクエリ条件は Eloquent の local scope（例: `Video::visibleTo($user)`）にする。**Repository パターンは導入しない**（`app/Repositories` を作らない）。
+- **新機能（WP4 以降）は service-first で書く**: まず Service とそのテスト（`tests/Feature/Services`）、次に Controller / Route / Resource。
+- 新しい Service には Feature テストを必ず付ける。
+- `env()` は `config/` の中でのみ使う（本番の `config:cache` 後は null になる）。アプリコードは `config()` を使う。
 
 ## Copyright policy（変更禁止）
 

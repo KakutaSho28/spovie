@@ -5,38 +5,24 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreVideoRequest;
 use App\Http\Resources\VideoResource;
 use App\Models\Video;
+use App\Services\VideoService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class VideoController extends Controller
 {
-    /**
-     * VIDEO-01 動画一覧取得
-     */
+    public function __construct(private readonly VideoService $videos) {}
+
+    /** VIDEO-01 動画一覧取得 */
     public function index(Request $request): AnonymousResourceCollection
     {
-        $user = $request->user();
-        $teamIds = $user->teams()->pluck('teams.id');
-
-        $videos = Video::query()
-            ->with('team')
-            ->where(function ($query) use ($user, $teamIds) {
-                $query
-                    ->where(function ($personal) use ($user) {
-                        $personal->where('user_id', $user->id)->whereNull('team_id');
-                    })
-                    ->orWhereIn('team_id', $teamIds);
-            })
-            ->orderByDesc('created_at')
-            ->paginate($request->integer('per_page', 20));
-
-        return VideoResource::collection($videos);
+        return VideoResource::collection(
+            $this->videos->paginateVisibleTo($request->user(), $request->integer('per_page', 20)),
+        );
     }
 
-    /**
-     * VIDEO-04 動画詳細取得
-     */
+    /** VIDEO-04 動画詳細取得 */
     public function show(Video $video): VideoResource
     {
         $this->authorize('view', $video);
@@ -44,61 +30,25 @@ class VideoController extends Controller
         return new VideoResource($video->load('team'));
     }
 
-    /**
-     * VIDEO-02 動画登録
-     */
+    /** VIDEO-02 動画登録 */
     public function store(StoreVideoRequest $request): JsonResponse
     {
-        if (! $this->canUseTeam($request)) {
-            return response()->json(['message' => 'このチームに動画を追加できません'], 403);
-        }
+        $video = $this->videos->createYoutube(
+            $request->user(),
+            $request->title,
+            $request->youtube_url,
+            $request->team_id,
+        );
 
-        $videoId = $this->extractYoutubeVideoId($request->youtube_url);
-
-        $video = $request->user()->videos()->create([
-            'team_id' => $request->team_id,
-            'type' => Video::TYPE_YOUTUBE,
-            'youtube_video_id' => $videoId,
-            'title' => $request->title,
-        ]);
-
-        return (new VideoResource($video))
-            ->response()
-            ->setStatusCode(201);
+        return (new VideoResource($video))->response()->setStatusCode(201);
     }
 
-    /**
-     * VIDEO-03 動画削除
-     */
+    /** VIDEO-03 動画削除 */
     public function destroy(Video $video): JsonResponse
     {
         $this->authorize('delete', $video);
-
-        $video->delete();
+        $this->videos->delete($video);
 
         return response()->json(['message' => '動画を削除しました']);
-    }
-
-    /**
-     * YouTube URLから動画IDを抽出する
-     * 対応形式: watch?v= / youtu.be/ / embed/
-     */
-    private function extractYoutubeVideoId(string $url): string
-    {
-        preg_match('/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/', $url, $matches);
-
-        return $matches[1];
-    }
-
-    private function canUseTeam(StoreVideoRequest $request): bool
-    {
-        if (! $request->team_id) {
-            return true;
-        }
-
-        return $request->user()
-            ->teams()
-            ->where('teams.id', $request->team_id)
-            ->exists();
     }
 }

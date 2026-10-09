@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -42,6 +43,17 @@ class Video extends Model
     public function clips(): HasMany
     {
         return $this->hasMany(Clip::class);
+    }
+
+    /**
+     * ユーザーが閲覧できる動画: 自分の個人動画 + 所属チームの動画
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $q) use ($user) {
+            $q->where(fn (Builder $personal) => $personal->where('user_id', $user->id)->whereNull('team_id'))
+                ->orWhereIn('team_id', $user->teams()->select('teams.id'));
+        });
     }
 
     public function isUpload(): bool
