@@ -13,6 +13,4 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return response()->json(['message' => 'Spovie API']);
-});
+// API 専用。ルートのクロージャは route:cache を壊すため定義しない。
