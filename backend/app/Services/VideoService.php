@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Services;
+
+use App\Exceptions\ServiceException;
+use App\Models\User;
+use App\Models\Video;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+
+class VideoService
+{
+    public function paginateVisibleTo(User $user, int $perPage = 20): LengthAwarePaginator
+    {
+        return Video::query()
+            ->visibleTo($user)
+            ->with('team')
+            ->orderByDesc('created_at')
+            ->paginate($perPage);
+    }
+
+    public function createYoutube(User $user, string $title, string $youtubeUrl, ?int $teamId): Video
+    {
+        $this->assertCanUseTeam($user, $teamId);
+
+        return $user->videos()->create([
+            'team_id' => $teamId,
+            'type' => Video::TYPE_YOUTUBE,
+            'youtube_video_id' => $this->extractYoutubeVideoId($youtubeUrl),
+            'title' => $title,
+        ]);
+    }
+
+    public function delete(Video $video): void
+    {
+        $video->delete();
+    }
+
+    /**
+     * 指定チームの動画を追加できるか（所属チームのみ）
+     */
+    public function assertCanUseTeam(User $user, ?int $teamId): void
+    {
+        if ($teamId && ! $user->teams()->where('teams.id', $teamId)->exists()) {
+            throw ServiceException::forbidden('このチームに動画を追加できません');
+        }
+    }
+
+    /**
+     * 対応形式: watch?v= / youtu.be/ / embed/
+     */
+    public function extractYoutubeVideoId(string $url): string
+    {
+        preg_match('/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/', $url, $matches);
+
+        return $matches[1];
+    }
+}
