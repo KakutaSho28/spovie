@@ -12,13 +12,13 @@ export type Video = {
   created_at: string;
 };
 
-/** 描画オブジェクト1つ分（相対座標 0〜1 で保存） */
+/** 描画オブジェクト1つ分（Fabric.js の toJSON 形式。保存時サイズの絶対座標） */
 export type CanvasObject = Record<string, unknown>;
 
 /** Fabric.js の toJSON() 結果 + 正規化用メタ情報 */
 export type CanvasData = {
   version?: string;
-  /** 保存時のキャンバス幅（相対座標への変換基準） */
+  /** 保存時のキャンバス幅（復元時の拡大縮小の基準） */
   canvas_width: number;
   /** 保存時のキャンバス高さ */
   canvas_height: number;
@@ -70,7 +70,9 @@ export type ShareView = {
     comment: string | null;
   };
   video: {
-    youtube_video_id: string;
+    type: VideoType;
+    youtube_video_id: string | null;
+    file_url: string | null;
     title: string;
   };
   expires_at: string | null;

@@ -15,9 +15,7 @@ class ShareController extends Controller
      */
     public function store(StoreShareLinkRequest $request, Annotation $annotation): JsonResponse
     {
-        if ($annotation->video->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('share', $annotation);
 
         $shareLink = $annotation->shareLinks()->create([
             'token' => Str::random(64),
@@ -62,7 +60,9 @@ class ShareController extends Controller
                     'comment' => $annotation->comment,
                 ],
                 'video' => [
+                    'type' => $video->type,
                     'youtube_video_id' => $video->youtube_video_id,
+                    'file_url' => $video->fileUrl(),
                     'title' => $video->title,
                 ],
                 'expires_at' => $shareLink->expires_at?->toIso8601String(),

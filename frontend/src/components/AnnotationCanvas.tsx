@@ -5,12 +5,13 @@ import {
   useRef,
 } from 'react';
 import * as fabric from 'fabric';
+import { scaleCanvasObjects } from '../lib/canvasScale';
 import type { CanvasData } from '../types';
 
 export type DrawTool = 'pen' | 'arrow' | 'text' | 'select';
 
 export type AnnotationCanvasHandle = {
-  /** 現在の描画を相対座標付きJSONで取得する */
+  /** 現在の描画を保存時サイズ付きJSONで取得する */
   toCanvasData: () => CanvasData;
   /** 保存済みJSONを読み込んで再描画する */
   loadCanvasData: (data: CanvasData) => void;
@@ -33,15 +34,16 @@ type Props = {
 };
 
 /**
- * YouTubeプレーヤーに重ねる透明な描画キャンバス。
- * 保存時は座標をキャンバスサイズで割って相対値(0〜1)に正規化し、
- * 復元時は現在のサイズを掛けて絶対座標に戻す。
+ * プレーヤーに重ねる透明な描画キャンバス。
+ * 保存時は Fabric の絶対座標とキャンバスサイズを記録し、
+ * 復元時・リサイズ時は (現在サイズ / 元のサイズ) で全オブジェクトを拡大縮小する。
  */
 export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, Props>(
   function AnnotationCanvas({ width, height, tool, color, readOnly = false }, ref) {
     const canvasElRef = useRef<HTMLCanvasElement>(null);
     const fabricRef = useRef<fabric.Canvas | null>(null);
     const arrowStartRef = useRef<{ x: number; y: number } | null>(null);
+    const sizeRef = useRef({ width: 0, height: 0 });
 
     // ----- 初期化・破棄 -----
     useEffect(() => {
@@ -62,7 +64,23 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, Props>(
     useEffect(() => {
       const canvas = fabricRef.current;
       if (!canvas || width === 0 || height === 0) return;
+      const prev = sizeRef.current;
       canvas.setDimensions({ width, height });
+      // 既存の描画もプレーヤーと同じ比率で拡大縮小する
+      if (prev.width > 0 && prev.height > 0) {
+        const sx = width / prev.width;
+        const sy = height / prev.height;
+        canvas.forEachObject((o) => {
+          o.set({
+            left: o.left * sx,
+            top: o.top * sy,
+            scaleX: o.scaleX * sx,
+            scaleY: o.scaleY * sy,
+          });
+          o.setCoords();
+        });
+      }
+      sizeRef.current = { width, height };
       canvas.renderAll();
     }, [width, height]);
 
@@ -121,21 +139,20 @@ export const AnnotationCanvas = forwardRef<AnnotationCanvasHandle, Props>(
         const canvas = fabricRef.current;
         if (!canvas) return { canvas_width: width, canvas_height: height, objects: [] };
         const json = canvas.toJSON() as { version?: string; objects: Record<string, unknown>[] };
-        // 相対座標に正規化して保存（画面サイズ差を吸収する）
-        const objects = json.objects.map((obj) => normalizeObject(obj, width, height));
+        // 絶対座標 + 保存時サイズで保存（復元時にサイズ比で変換する）
         return {
           version: json.version,
           canvas_width: width,
           canvas_height: height,
-          objects,
+          objects: json.objects,
         };
       },
 
       loadCanvasData: (data) => {
         const canvas = fabricRef.current;
         if (!canvas) return;
-        // 相対座標 → 現在のキャンバスサイズの絶対座標に復元
-        const objects = data.objects.map((obj) => denormalizeObject(obj, width, height));
+        // 保存時サイズ → 現在のキャンバスサイズに変換して復元
+        const objects = scaleCanvasObjects(data, width, height);
         canvas
           .loadFromJSON({ version: data.version, objects })
           .then(() => {
@@ -209,36 +226,3 @@ function addArrow(
   canvas.add(group);
 }
 
-/** 絶対座標 → 相対座標（0〜1）に変換 */
-function normalizeObject(
-  obj: Record<string, unknown>,
-  w: number,
-  h: number,
-): Record<string, unknown> {
-  return {
-    ...obj,
-    left: typeof obj.left === 'number' ? obj.left / w : obj.left,
-    top: typeof obj.top === 'number' ? obj.top / h : obj.top,
-    scaleX: typeof obj.scaleX === 'number' ? (obj.scaleX * w) / 1000 : obj.scaleX,
-    scaleY: typeof obj.scaleY === 'number' ? (obj.scaleY * h) / 1000 : obj.scaleY,
-    __normalized: true,
-  };
-}
-
-/** 相対座標 → 現在サイズの絶対座標に変換 */
-function denormalizeObject(
-  obj: Record<string, unknown>,
-  w: number,
-  h: number,
-): Record<string, unknown> {
-  if (!obj.__normalized) return obj;
-  const { __normalized, ...rest } = obj;
-  void __normalized;
-  return {
-    ...rest,
-    left: typeof rest.left === 'number' ? rest.left * w : rest.left,
-    top: typeof rest.top === 'number' ? rest.top * h : rest.top,
-    scaleX: typeof rest.scaleX === 'number' ? (rest.scaleX * 1000) / w : rest.scaleX,
-    scaleY: typeof rest.scaleY === 'number' ? (rest.scaleY * 1000) / h : rest.scaleY,
-  };
-}

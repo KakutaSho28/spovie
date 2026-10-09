@@ -10,7 +10,7 @@ import { ClipModal } from '../components/ClipModal';
 import { TimeInput } from '../components/TimeInput';
 import { useHtml5VideoLoop } from '../hooks/useHtml5VideoLoop';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
-import type { Annotation, Video } from '../types';
+import type { Annotation, CanvasData, Video } from '../types';
 
 const COLORS = ['#ff3b30', '#ffd60a', '#ffffff'];
 
@@ -21,6 +21,7 @@ export function AnnotatePage() {
   const navigate = useNavigate();
 
   const [video, setVideo] = useState<Video | null>(null);
+  const [loadError, setLoadError] = useState('');
   const [startSeconds, setStartSeconds] = useState(0);
   const [endSeconds, setEndSeconds] = useState(10);
   const [looping, setLooping] = useState(false);
@@ -32,6 +33,7 @@ export function AnnotatePage() {
   const [drawing, setDrawing] = useState(false);
   const [clipModalOpen, setClipModalOpen] = useState(false);
   const [savedAnnotationId, setSavedAnnotationId] = useState<number | null>(null);
+  const [pendingCanvasData, setPendingCanvasData] = useState<CanvasData | null>(null);
   const [startTimeValid, setStartTimeValid] = useState(true);
   const [endTimeValid, setEndTimeValid] = useState(true);
 
@@ -44,10 +46,19 @@ export function AnnotatePage() {
 
   // ----- 動画情報の取得 -----
   useEffect(() => {
-    apiClient.get('/videos').then((res) => {
-      const found = (res.data.data as Video[]).find((v) => v.id === Number(videoId));
-      setVideo(found ?? null);
-    });
+    apiClient
+      .get<{ data: Video }>(`/videos/${videoId}`)
+      .then((res) => setVideo(res.data.data))
+      .catch((err) => {
+        const status = err.response?.status;
+        setLoadError(
+          status === 403
+            ? 'この動画を閲覧する権限がありません'
+            : status === 404
+              ? '動画が見つかりません'
+              : '動画の読み込みに失敗しました',
+        );
+      });
   }, [videoId]);
 
   // ----- 既存アノテーションの読み込み（「開く」から来た場合） -----
@@ -62,9 +73,16 @@ export function AnnotatePage() {
       setEndSeconds(found.end_seconds);
       setComment(found.comment ?? '');
       setSavedAnnotationId(found.id);
-      window.setTimeout(() => canvasRef.current?.loadCanvasData(found.canvas_data), 600);
+      setPendingCanvasData(found.canvas_data);
     });
   }, [annotationId, videoId]);
+
+  // キャンバスのサイズが確定してから描画を復元する
+  useEffect(() => {
+    if (!pendingCanvasData || wrapSize.width === 0) return;
+    canvasRef.current?.loadCanvasData(pendingCanvasData);
+    setPendingCanvasData(null);
+  }, [pendingCanvasData, wrapSize.width]);
 
   // ----- ResizeObserver: プレーヤーとCanvasのサイズを同期 -----
   useEffect(() => {
@@ -189,6 +207,7 @@ export function AnnotatePage() {
     }
   };
 
+  if (loadError) return <p className="error-msg">{loadError}</p>;
   if (!video) return <p className="muted">読み込み中...</p>;
 
   return (
