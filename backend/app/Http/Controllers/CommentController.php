@@ -7,16 +7,13 @@ use App\Http\Resources\CommentResource;
 use App\Models\Annotation;
 use App\Models\Comment;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CommentController extends Controller
 {
-    public function index(Request $request, Annotation $annotation): AnonymousResourceCollection|JsonResponse
+    public function index(Annotation $annotation): AnonymousResourceCollection
     {
-        if (! $annotation->video->canBeAccessedBy($request->user())) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('view', $annotation);
 
         $comments = $annotation->comments()
             ->with('user')
@@ -28,9 +25,7 @@ class CommentController extends Controller
 
     public function store(StoreCommentRequest $request, Annotation $annotation): JsonResponse
     {
-        if (! $annotation->video->canBeAccessedBy($request->user())) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('view', $annotation);
 
         $comment = $annotation->comments()->create([
             'user_id' => $request->user()->id,
@@ -42,11 +37,9 @@ class CommentController extends Controller
             ->setStatusCode(201);
     }
 
-    public function destroy(Request $request, Comment $comment): JsonResponse
+    public function destroy(Comment $comment): JsonResponse
     {
-        if ($comment->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('delete', $comment);
 
         $comment->delete();
 
