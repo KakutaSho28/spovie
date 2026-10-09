@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import {
   AnnotationCanvas,
   AnnotationCanvasHandle,
 } from '../components/AnnotationCanvas';
+import { useHtml5VideoLoop } from '../hooks/useHtml5VideoLoop';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import type { ShareView } from '../types';
 import { formatTime } from '../utils/time';
@@ -16,6 +17,7 @@ export function SharePage() {
 
   const canvasRef = useRef<AnnotationCanvasHandle>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const html5VideoRef = useRef<HTMLVideoElement>(null);
   const [wrapSize, setWrapSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
@@ -41,20 +43,43 @@ export function SharePage() {
     return () => observer.disconnect();
   }, [view]);
 
+  const isUpload = view?.video.type === 'upload';
+  const loop = useMemo(
+    () =>
+      view ? { start: view.annotation.start_seconds, end: view.annotation.end_seconds } : null,
+    [view],
+  );
+
+  // ----- YouTube再生（type=youtubeのみ） -----
   const { containerRef, isReady, playFrom } = useYouTubePlayer({
-    videoId: view?.video.youtube_video_id ?? '',
-    loop: view
-      ? { start: view.annotation.start_seconds, end: view.annotation.end_seconds }
-      : null,
+    videoId: view?.video.type === 'youtube' ? (view.video.youtube_video_id ?? '') : '',
+    loop,
   });
 
-  // プレーヤー準備完了 → ループ開始 + アノテーション再現
+  // ----- HTML5再生（type=uploadのみ） -----
+  useHtml5VideoLoop({ videoRef: html5VideoRef, loop: isUpload ? loop : null });
+
+  // YouTube: プレーヤー準備完了 → ループ開始
   useEffect(() => {
-    if (!isReady || !view || wrapSize.width === 0) return;
+    if (!isReady || !view || isUpload) return;
     playFrom(view.annotation.start_seconds);
-    canvasRef.current?.loadCanvasData(view.annotation.canvas_data);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isReady, view, wrapSize.width]);
+  }, [isReady, view]);
+
+  // キャンバスのサイズ確定 → アノテーション再現（以降のリサイズはキャンバス側で追従）
+  const hasSize = wrapSize.width > 0;
+  useEffect(() => {
+    if (!view || !hasSize) return;
+    canvasRef.current?.loadCanvasData(view.annotation.canvas_data);
+  }, [view, hasSize]);
+
+  const handleLoadedMetadata = () => {
+    const video = html5VideoRef.current;
+    if (!video || !view) return;
+    video.currentTime = view.annotation.start_seconds;
+    // 自動再生はミュート時のみブラウザに許可される
+    video.play().catch(() => undefined);
+  };
 
   if (errorMessage) {
     return (
@@ -84,7 +109,19 @@ export function SharePage() {
         </p>
 
         <div className="player-wrap" ref={wrapRef}>
-          <div ref={containerRef} />
+          {isUpload && view.video.file_url ? (
+            <video
+              ref={html5VideoRef}
+              src={view.video.file_url}
+              controls
+              muted
+              playsInline
+              onLoadedMetadata={handleLoadedMetadata}
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+            />
+          ) : (
+            <div ref={containerRef} />
+          )}
           <div className="canvas-layer pass-through">
             <AnnotationCanvas
               ref={canvasRef}
