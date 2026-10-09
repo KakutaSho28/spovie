@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Events\CommentCreated;
+use App\Events\CommentDeleted;
 use App\Models\Annotation;
 use App\Models\Comment;
 use App\Models\User;
@@ -24,11 +26,19 @@ class CommentService
             'body' => $body,
         ]);
 
+        // 投稿者本人のブラウザ（X-Socket-ID）には送らない。クライアント側でも id で重複排除する
+        broadcast(new CommentCreated($comment))->toOthers();
+
         return $comment->load('user');
     }
 
     public function delete(Comment $comment): void
     {
+        $commentId = $comment->id;
+        $annotationId = $comment->annotation_id;
+
         $comment->delete();
+
+        broadcast(new CommentDeleted($commentId, $annotationId))->toOthers();
     }
 }
