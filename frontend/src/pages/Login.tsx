@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
+import { postLoginPath } from '../lib/pendingInvite';
 import { useAuthStore } from '../store/auth';
 
 export function LoginPage() {
@@ -18,7 +19,7 @@ export function LoginPage() {
     try {
       const res = await apiClient.post('/auth/login', { email, password });
       setAuth(res.data.data.token, res.data.data.user);
-      navigate('/');
+      navigate(postLoginPath());
     } catch (err: unknown) {
       const message =
         err && typeof err === 'object' && 'response' in err

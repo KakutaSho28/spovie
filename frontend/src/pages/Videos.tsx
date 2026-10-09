@@ -10,25 +10,33 @@ export function VideosPage() {
   const [loading, setLoading] = useState(true);
   const teamFilter = searchParams.get('team') ?? 'all';
 
+  // フィルタはサーバー側で行う（一覧は 20 件ずつのページングのため、クライアント側で絞ると取りこぼす）
   const fetchVideos = async () => {
-    const [videosRes, teamsRes] = await Promise.all([
-      apiClient.get('/videos'),
-      apiClient.get('/teams'),
-    ]);
-    setVideos(videosRes.data.data);
-    setTeams(teamsRes.data.data);
-    setLoading(false);
+    const params =
+      teamFilter === 'all'
+        ? {}
+        : teamFilter === 'personal'
+          ? { scope: 'personal' }
+          : { team_id: Number(teamFilter) };
+    try {
+      const res = await apiClient.get<{ data: Video[] }>('/videos', { params });
+      setVideos(res.data.data);
+    } catch {
+      setVideos([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchVideos();
+    apiClient.get('/teams').then((res) => setTeams(res.data.data));
   }, []);
 
-  const filteredVideos = videos.filter((video) => {
-    if (teamFilter === 'all') return true;
-    if (teamFilter === 'personal') return video.team === null;
-    return video.team?.id === Number(teamFilter);
-  });
+  useEffect(() => {
+    setLoading(true);
+    fetchVideos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamFilter]);
 
   const handleDelete = async (video: Video) => {
     const ok = window.confirm(
@@ -68,14 +76,14 @@ export function VideosPage() {
 
       {loading ? (
         <p className="muted">読み込み中...</p>
-      ) : filteredVideos.length === 0 ? (
+      ) : videos.length === 0 ? (
         <div className="empty">
           <p>動画がまだありません。</p>
           <Link to="/videos/new" className="btn btn-primary">最初の動画を追加する</Link>
         </div>
       ) : (
         <div className="grid">
-          {filteredVideos.map((video) => (
+          {videos.map((video) => (
             <div className="card" key={video.id}>
               {video.type === 'youtube' && video.youtube_video_id ? (
                 <img
