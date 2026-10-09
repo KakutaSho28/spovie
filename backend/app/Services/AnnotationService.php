@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\AnnotationCreated;
 use App\Models\Annotation;
 use App\Models\Video;
 use Illuminate\Database\Eloquent\Collection;
@@ -21,7 +22,11 @@ class AnnotationService
      */
     public function create(Video $video, array $data): Annotation
     {
-        return $video->annotations()->create($data);
+        $annotation = $video->annotations()->create($data);
+
+        broadcast(new AnnotationCreated($annotation))->toOthers();
+
+        return $annotation;
     }
 
     public function delete(Annotation $annotation): void
