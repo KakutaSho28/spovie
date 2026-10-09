@@ -107,6 +107,13 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 ## Git workflow
 
 - WP ごとにブランチ（`feature/wp1-fixes` など）→ `develop` へ PR → 検証後 `develop` → `main`。
-- コミットは小さく、Conventional Commits（`feat:` `fix:` `docs:` `chore:` `test:`）。
+- コミットは小さく、Conventional Commits。**コミットメッセージは日本語**で書く（既存の push 済みコミットは書き換えない）。
+  - 形式: `<type>(<scope>): <日本語の要約>`
+  - type: `feat` / `fix` / `refactor` / `test` / `docs` / `chore` / `ci`
+  - scope: `backend` / `frontend` / `docker` / `ci` など（任意）
+  - 本文（body）も日本語。「何を」より「なぜ」を書く
+  - 例: `fix(frontend): 小さい画面でアノテーションの図形が拡大される問題を修正`
+  - 末尾の Co-Authored-By などのトレーラー行はそのまま残す
+- **PR のタイトルと説明も日本語**で書く。
 - `main` への push が本番デプロイのトリガー（WP3 以降）。
 - 作業完了の前に必ず test / route:list / build を実行し、実行したものを報告する。
