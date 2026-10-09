@@ -35,6 +35,16 @@ class VideoController extends Controller
     }
 
     /**
+     * VIDEO-04 動画詳細取得
+     */
+    public function show(Video $video): VideoResource
+    {
+        $this->authorize('view', $video);
+
+        return new VideoResource($video->load('team'));
+    }
+
+    /**
      * VIDEO-02 動画登録
      */
     public function store(StoreVideoRequest $request): JsonResponse
@@ -60,11 +70,9 @@ class VideoController extends Controller
     /**
      * VIDEO-03 動画削除
      */
-    public function destroy(Request $request, Video $video): JsonResponse
+    public function destroy(Video $video): JsonResponse
     {
-        if (! $this->canManageVideo($request, $video)) {
-            return response()->json(['message' => 'この操作は許可されていません'], 403);
-        }
+        $this->authorize('delete', $video);
 
         $video->delete();
 
@@ -92,18 +100,5 @@ class VideoController extends Controller
             ->teams()
             ->where('teams.id', $request->team_id)
             ->exists();
-    }
-
-    private function canManageVideo(Request $request, Video $video): bool
-    {
-        if ($video->team_id) {
-            return $video->team()->whereHas('memberships', function ($query) use ($request) {
-                $query
-                    ->where('user_id', $request->user()->id)
-                    ->where('role', 'owner');
-            })->exists();
-        }
-
-        return $video->user_id === $request->user()->id;
     }
 }

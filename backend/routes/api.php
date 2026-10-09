@@ -18,7 +18,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/share/{token}', [ShareController::class, 'show']);
 
 // 切り抜き動画ダウンロード（LINE共有用・認証不要）
-Route::get('/clips/{clip}/download', [ClipController::class, 'download']);
+Route::get('/clips/{clip}/download/{token}', [ClipController::class, 'download']);
 
 // ===== 認証必須 =====
 Route::middleware('auth:sanctum')->group(function () {
@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/videos', [VideoController::class, 'index']);
     Route::post('/videos', [VideoController::class, 'store']);
     Route::post('/videos/upload', [VideoUploadController::class, 'store']);
+    Route::get('/videos/{video}', [VideoController::class, 'show']);
     Route::delete('/videos/{video}', [VideoController::class, 'destroy']);
 
     // チーム（F17）

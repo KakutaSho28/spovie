@@ -19,7 +19,7 @@ class ClipResource extends JsonResource
             'end_seconds' => $this->end_seconds,
             'status' => $this->status,
             'download_url' => $this->status === Clip::STATUS_DONE
-                ? url("/api/clips/{$this->id}/download")
+                ? url("/api/clips/{$this->id}/download/{$this->download_token}")
                 : null,
             'created_at' => $this->created_at->toIso8601String(),
         ];
