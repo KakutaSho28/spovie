@@ -32,7 +32,7 @@ cp .env.example .env
 # 3. コンテナ起動
 docker compose up -d --build
 
-# 4. バックエンド初期化（Laravelスケルトン生成 + Spovieコード適用 + migrate）
+# 4. バックエンド初期化（composer install + .env + key + migrate + storage:link）
 bash scripts/setup-backend.sh
 ```
 
@@ -50,14 +50,14 @@ bash scripts/setup-backend.sh
 spovie/
 ├── docker-compose.yml
 ├── docker/                 # Nginx / PHP / MySQL の設定
-├── backend/                # Laravel 本体（setup-backend.sh が生成）
-├── backend-overlay/        # Spovieのアプリケーションコード（backendに上書きされる）
-│   ├── app/Http/Controllers/   # Auth / Video / Annotation / Share
+├── backend/                # Laravel 本体
+│   ├── app/Http/Controllers/   # Auth / Video / Annotation / Share / Clip / Team / Comment
 │   ├── app/Http/Requests/      # バリデーション
 │   ├── app/Http/Resources/     # レスポンス整形
-│   ├── app/Models/             # User / Video / Annotation / ShareLink
-│   ├── database/migrations/    # videos / annotations / share_links
-│   └── routes/api.php
+│   ├── app/Models/
+│   ├── database/migrations/
+│   ├── routes/api.php
+│   └── tests/Feature/          # 機能テスト（sqlite in-memory）
 ├── frontend/               # React + Vite + TypeScript
 │   └── src/
 │       ├── api/            # Axiosクライアント（トークン自動付与）
@@ -66,7 +66,8 @@ spovie/
 │       ├── components/     # AnnotationCanvas（Fabric.js）/ Layout
 │       ├── pages/          # S01〜S07 の7画面
 │       └── types/          # 型定義 + YouTube API型
-└── scripts/setup-backend.sh
+├── scripts/setup-backend.sh
+└── .github/workflows/ci.yml  # PRごとに backend test + frontend build
 ```
 
 ## 実装済み機能（MVP）
@@ -88,6 +89,13 @@ spovie/
 - Canvasアノテーション：ペン / 矢印 / テキスト / 元に戻す / 選択削除（Fabric.js v6）
 - 相対座標（0〜1）での保存・復元 — 異なる画面サイズ間でも描画を正確に再現
 - ResizeObserverによるプレーヤーとCanvasのサイズ同期
+
+## テスト
+
+```bash
+cd backend && php artisan test     # sqlite in-memory
+cd frontend && npm run build       # TypeScript strict チェック + ビルド
+```
 
 ## ブランチ運用
 
