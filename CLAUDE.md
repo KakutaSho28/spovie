@@ -33,7 +33,8 @@ frontend/src/
   types/                 型定義
 docker/             nginx / php / mysql 設定
 scripts/setup-backend.sh  初回セットアップ（composer install, .env, key, migrate, storage:link）
-.github/workflows/ci.yml  PR ごとに backend test + frontend build
+frontend/e2e/        Playwright E2E（API モック、バックエンド不要）
+.github/workflows/ci.yml  PR ごとに backend test + frontend build + e2e
 ```
 
 ## How to run
@@ -51,6 +52,7 @@ bash scripts/setup-backend.sh        # 初回のみ
 cd backend && php artisan test         # sqlite :memory:（phpunit.xml で設定）
 cd backend && php artisan route:list   # ルート競合がないこと
 cd frontend && npm run build           # tsc（strict）+ vite build
+cd frontend && npm run e2e             # Playwright（API はモック。初回は npx playwright install chromium）
 ```
 
 ホストで frontend を動かすときは `npm ci` をホストで実行する（コンテナで入れた node_modules は Linux 用バイナリのため）。
@@ -58,7 +60,7 @@ cd frontend && npm run build           # tsc（strict）+ vite build
 ## Coding rules
 
 - Frontend: TypeScript strict、`any` 禁止。UI 文言は日本語。
-- Backend: バリデーションは FormRequest、レスポンスは Resource、認可は Policy / コントローラで行う。
+- Backend: バリデーションは FormRequest、レスポンスは Resource、認可は Policy（app/Policies）+ `$this->authorize()`。拒否時は Handler が共通の 403 `{"message":"この操作は許可されていません"}` を返す。
 - レスポンス形式: 成功 `{ "data": ... }`、エラー / メッセージ `{ "message": ... }`。
 - アノテーション座標は画面サイズに依存しない形で保存し、任意サイズで再描画できること。
 - 新しい環境変数は必ず `.env.example`（root / backend / frontend の該当箇所）に追加する。秘密情報はコミットしない。
