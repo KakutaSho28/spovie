@@ -15,8 +15,7 @@ class UploadVideoRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:255'],
-            // 500MB = 512000KB
-            'file' => ['required', 'file', 'mimetypes:video/mp4', 'max:512000'],
+            'file' => ['required', 'file', 'mimetypes:video/mp4', 'max:' . (config('media.max_upload_mb') * 1024)],
             'team_id' => ['nullable', 'integer', 'exists:teams,id'],
         ];
     }
@@ -25,7 +24,7 @@ class UploadVideoRequest extends FormRequest
     {
         return [
             'file.mimetypes' => 'mp4形式の動画ファイルをアップロードしてください',
-            'file.max' => 'ファイルサイズは500MB以下にしてください',
+            'file.max' => 'ファイルサイズは' . config('media.max_upload_mb') . 'MB以下にしてください',
         ];
     }
 }

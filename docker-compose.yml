@@ -69,6 +69,7 @@ services:
     command: sh -c "npm install && npm run dev -- --host"
     environment:
       - VITE_API_BASE_URL=${VITE_API_BASE_URL}
+      - VITE_MAX_UPLOAD_MB=${VITE_MAX_UPLOAD_MB:-200}
     networks:
       - app_network
 
