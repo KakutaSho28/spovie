@@ -83,6 +83,14 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 - 新しい Service には Feature テストを必ず付ける。
 - `env()` は `config/` の中でのみ使う（本番の `config:cache` 後は null になる）。アプリコードは `config()` を使う。
 
+## Storage（WP2）
+
+- ファイル操作は `MediaStorageService`（既定ディスク `FILESYSTEM_DISK` を使う）経由。`Storage::disk('public')` などを直接書かない。
+- ローカル開発は `public`、本番は `s3`（AWS S3 / Cloudflare R2。`AWS_ENDPOINT` / `AWS_USE_PATH_STYLE_ENDPOINT` / `AWS_URL`）。
+- 非公開バケットの動画再生・クリップ DL は一時署名 URL（既定 60 分、`MEDIA_URL_TTL_MINUTES`）。公開バケットなら `MEDIA_TEMPORARY_URLS=false`。
+- クリップ生成は `ClipProcessingService`（S3 は一時ファイル経由で FFmpeg、失敗時も一時ファイル削除）。FFmpeg 呼び出しは `App\Support\Ffmpeg`（テストで差し替える）。
+- アップロード上限は `UPLOAD_MAX_MB`（既定 200MB。プロキシのタイムアウト対策）。UI 側は `VITE_MAX_UPLOAD_MB`、nginx/php.ini も合わせる。
+
 ## Copyright policy（変更禁止）
 
 - **YouTube 動画**: アノテーション + 共有リンクのみ。切り抜き・動画データの保存はしない（座標データのみ保存）。

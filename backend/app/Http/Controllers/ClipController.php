@@ -7,13 +7,16 @@ use App\Http\Resources\ClipResource;
 use App\Models\Clip;
 use App\Models\Video;
 use App\Services\ClipService;
+use App\Services\MediaStorageService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\RedirectResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClipController extends Controller
 {
-    public function __construct(private readonly ClipService $clips) {}
+    public function __construct(private readonly ClipService $clips,
+        private readonly MediaStorageService $media,
+    ) {}
 
     /** 切り抜きジョブの作成 POST /api/clips */
     public function store(StoreClipRequest $request): JsonResponse
@@ -41,10 +44,10 @@ class ClipController extends Controller
     }
 
     /** 切り抜き動画のダウンロード（認証不要 = LINE共有用、トークン必須） */
-    public function download(Clip $clip, string $token): StreamedResponse
+    public function download(Clip $clip, string $token): StreamedResponse|RedirectResponse
     {
         $fileName = $this->clips->downloadName($clip, $token);
 
-        return Storage::disk(config('filesystems.default'))->download($clip->file_path, $fileName);
+        return $this->media->download($clip->file_path, $fileName);
     }
 }
