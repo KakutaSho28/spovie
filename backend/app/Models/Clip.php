@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class Clip extends Model
 {
@@ -22,7 +23,20 @@ class Clip extends Model
         'end_seconds',
         'file_path',
         'status',
+        'download_token',
     ];
+
+    protected $hidden = [
+        'download_token',
+    ];
+
+    protected static function booted(): void
+    {
+        // ダウンロードURLを推測できないようにランダムトークンを付与する
+        static::creating(function (Clip $clip) {
+            $clip->download_token ??= Str::random(40);
+        });
+    }
 
     public function video(): BelongsTo
     {
