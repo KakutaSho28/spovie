@@ -95,6 +95,7 @@ spovie/
 ```bash
 cd backend && php artisan test     # sqlite in-memory
 cd frontend && npm run build       # TypeScript strict チェック + ビルド
+cd frontend && npm run e2e         # Playwright E2E（APIモック）
 ```
 
 ## ブランチ運用
