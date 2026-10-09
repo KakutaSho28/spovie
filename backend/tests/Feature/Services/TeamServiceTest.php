@@ -23,39 +23,49 @@ class TeamServiceTest extends TestCase
         $this->assertSame('owner', $team->members()->first()->pivot->role);
     }
 
-    public function test_join_is_idempotent_and_checks_token(): void
+    public function test_join_by_invite_token_is_idempotent(): void
     {
         $service = app(TeamService::class);
         $team = Team::factory()->create();
         $user = User::factory()->create();
 
-        $service->join($team, $user, $team->invite_token);
-        $service->join($team, $user, $team->invite_token);
-        $this->assertSame(1, $team->memberships()->where('user_id', $user->id)->count());
+        $service->joinByInviteToken($user, $team->invite_token);
+        $joined = $service->joinByInviteToken($user, $team->invite_token);
 
-        $this->expectException(ServiceException::class);
-        $service->join($team, User::factory()->create(), 'wrong');
+        $this->assertTrue($joined->is($team));
+        $this->assertSame(1, $team->memberships()->where('user_id', $user->id)->count());
+        $this->assertSame('member', $team->memberships()->where('user_id', $user->id)->first()->role);
     }
 
-    public function test_owner_cannot_leave_or_remove_self_but_member_can_leave(): void
+    public function test_join_with_unknown_token_is_404(): void
+    {
+        try {
+            app(TeamService::class)->joinByInviteToken(User::factory()->create(), 'unknown');
+            $this->fail('ServiceException expected');
+        } catch (ServiceException $e) {
+            $this->assertSame(404, $e->status);
+        }
+    }
+
+    public function test_remove_member_detaches_member_but_never_the_owner(): void
     {
         $service = app(TeamService::class);
         $team = Team::factory()->create();
         $member = User::factory()->create();
-        $service->join($team, $member, $team->invite_token);
+        $service->joinByInviteToken($member, $team->invite_token);
 
-        $service->leave($team, $member);
+        $service->removeMember($team, $member);
         $this->assertFalse($team->hasMember($member));
 
         foreach ([
-            fn () => $service->leave($team, $team->owner),
-            fn () => $service->removeMember($team, $team->owner, $team->owner),
-        ] as $fn) {
+            [fn () => $service->removeMember($team, $team->owner), 422],
+            [fn () => $service->removeMember($team, $member), 404],
+        ] as [$fn, $status]) {
             try {
                 $fn();
                 $this->fail('ServiceException expected');
             } catch (ServiceException $e) {
-                $this->assertSame(422, $e->status);
+                $this->assertSame($status, $e->status);
             }
         }
     }

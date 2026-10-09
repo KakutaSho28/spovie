@@ -38,11 +38,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // チーム（F17）
     Route::get('/teams', [TeamController::class, 'index']);
     Route::post('/teams', [TeamController::class, 'store']);
+    Route::post('/teams/join', [TeamController::class, 'join']);
     Route::get('/teams/invite/{token}', [TeamController::class, 'invite']);
     Route::get('/teams/{team}', [TeamController::class, 'show']);
     Route::delete('/teams/{team}', [TeamController::class, 'destroy']);
-    Route::post('/teams/{team}/join', [TeamController::class, 'join']);
-    Route::delete('/teams/{team}/members/me', [TeamController::class, 'leave']);
     Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember']);
     Route::get('/teams/{team}/videos', [TeamController::class, 'videos']);
 

@@ -35,7 +35,7 @@ export function TeamDetailPage() {
   };
 
   const handleLeave = async () => {
-    await apiClient.delete(`/teams/${teamId}/members/me`);
+    await apiClient.delete(`/teams/${teamId}/members/${user?.id}`);
     navigate('/teams');
   };
 
