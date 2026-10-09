@@ -1,5 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { apiClient } from '../api/client';
+import { useChannelEvent, useOnReconnect } from '../hooks/useRealtime';
+import { removeComment, upsertComment, withOwnership } from '../lib/commentList';
+import { useAuthStore } from '../store/auth';
 import type { Comment } from '../types';
 
 type Props = {
@@ -7,6 +10,7 @@ type Props = {
 };
 
 export function CommentThread({ annotationId }: Props) {
+  const myUserId = useAuthStore((s) => s.user?.id);
   const [comments, setComments] = useState<Comment[]>([]);
   const [body, setBody] = useState('');
   const [loading, setLoading] = useState(true);
@@ -27,6 +31,18 @@ export function CommentThread({ annotationId }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [annotationId]);
 
+  // ----- リアルタイム: 他の人のコメントの追加・削除を即時反映（id で重複排除） -----
+  useChannelEvent<{ comment: Comment }>(`annotation.${annotationId}`, 'comment.created', ({ comment }) =>
+    setComments((list) => upsertComment(list, withOwnership(comment, myUserId))),
+  );
+  useChannelEvent<{ id: number }>(`annotation.${annotationId}`, 'comment.deleted', ({ id }) =>
+    setComments((list) => removeComment(list, id)),
+  );
+  // 切断中に取りこぼした分を補う
+  useOnReconnect(() => {
+    fetchComments().catch(() => undefined);
+  });
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     const trimmed = body.trim();
@@ -35,9 +51,12 @@ export function CommentThread({ annotationId }: Props) {
     setPosting(true);
     setError('');
     try {
-      await apiClient.post(`/annotations/${annotationId}/comments`, { body: trimmed });
+      const res = await apiClient.post<{ data: Comment }>(`/annotations/${annotationId}/comments`, {
+        body: trimmed,
+      });
       setBody('');
-      await fetchComments();
+      // 先に自分の画面へ反映（後から届く WebSocket 通知は id で重複排除される）
+      setComments((list) => upsertComment(list, withOwnership(res.data.data, myUserId)));
     } catch {
       setError('コメントの投稿に失敗しました');
     } finally {
@@ -47,7 +66,7 @@ export function CommentThread({ annotationId }: Props) {
 
   const handleDelete = async (comment: Comment) => {
     await apiClient.delete(`/comments/${comment.id}`);
-    fetchComments();
+    setComments((list) => removeComment(list, comment.id));
   };
 
   return (
