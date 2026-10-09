@@ -4,6 +4,7 @@ use App\Http\Controllers\AnnotationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClipController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\VideoController;
@@ -11,6 +12,9 @@ use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
 
 // ===== 認証不要 =====
+
+// ヘルスチェック（DB 接続確認。稼働監視・Railway healthcheck 用）
+Route::get('/health', HealthController::class);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
