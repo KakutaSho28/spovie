@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\JoinTeamRequest;
 use App\Http\Requests\StoreTeamRequest;
 use App\Http\Resources\TeamResource;
 use App\Http\Resources\VideoResource;
@@ -40,10 +41,10 @@ class TeamController extends Controller
         return new TeamResource($this->teams->findByInviteToken($token)->load(['owner', 'members']));
     }
 
-    public function join(Request $request, Team $team): TeamResource
+    /** POST /api/teams/join（冪等） */
+    public function join(JoinTeamRequest $request): TeamResource
     {
-        $validated = $request->validate(['invite_token' => ['required', 'string']]);
-        $this->teams->join($team, $request->user(), $validated['invite_token']);
+        $team = $this->teams->joinByInviteToken($request->user(), $request->invite_token);
 
         return new TeamResource($team->load(['owner', 'members']));
     }
@@ -56,19 +57,15 @@ class TeamController extends Controller
         return response()->json(['message' => 'チームを削除しました']);
     }
 
+    /** DELETE /api/teams/{team}/members/{user}（オーナーによる削除 / 本人の脱退） */
     public function removeMember(Request $request, Team $team, User $user): JsonResponse
     {
-        $this->authorize('manage', $team);
-        $this->teams->removeMember($team, $request->user(), $user);
+        $this->authorize('removeMember', [$team, $user]);
+        $this->teams->removeMember($team, $user);
 
-        return response()->json(['message' => 'メンバーを削除しました']);
-    }
-
-    public function leave(Request $request, Team $team): JsonResponse
-    {
-        $this->teams->leave($team, $request->user());
-
-        return response()->json(['message' => 'チームを脱退しました']);
+        return response()->json([
+            'message' => $request->user()->is($user) ? 'チームを脱退しました' : 'メンバーを削除しました',
+        ]);
     }
 
     public function videos(Request $request, Team $team): AnonymousResourceCollection

@@ -45,12 +45,14 @@ class TeamService
     }
 
     /**
-     * 招待トークンで参加する（既にメンバーなら何もしない）
+     * 招待トークンで参加する（冪等: 既にメンバーなら何もしない）
      */
-    public function join(Team $team, User $user, string $inviteToken): Team
+    public function joinByInviteToken(User $user, string $inviteToken): Team
     {
-        if (! hash_equals($team->invite_token, $inviteToken)) {
-            throw new ServiceException('招待トークンが正しくありません');
+        $team = Team::where('invite_token', $inviteToken)->first();
+
+        if (! $team) {
+            throw ServiceException::notFound('招待リンクが無効です');
         }
 
         if (! $team->hasMember($user)) {
@@ -63,27 +65,33 @@ class TeamService
         return $team;
     }
 
-    public function removeMember(Team $team, User $actor, User $target): void
+    /**
+     * メンバーを外す / 自分が脱退する（権限は TeamPolicy::removeMember で判定済みの前提）。
+     * オーナーは外せない・脱退できない。
+     */
+    public function removeMember(Team $team, User $target): void
     {
-        if ($target->id === $actor->id) {
-            throw new ServiceException('オーナー自身は削除できません');
+        if ($team->isOwner($target)) {
+            throw new ServiceException('オーナーは削除・脱退できません');
+        }
+
+        if (! $team->hasMember($target)) {
+            throw ServiceException::notFound('このチームのメンバーではありません');
         }
 
         $team->members()->detach($target->id);
     }
 
-    public function leave(Team $team, User $user): void
-    {
-        if ($team->isOwner($user)) {
-            throw new ServiceException('オーナーはチームを脱退できません');
-        }
-
-        $team->members()->detach($user->id);
-    }
-
+    /**
+     * チームを削除する。所属していた動画は投稿者の個人動画に戻す
+     * （DB の ON DELETE SET NULL に加え、外部キーが効かない環境でも同じ結果にする）。
+     */
     public function delete(Team $team): void
     {
-        $team->delete();
+        DB::transaction(function () use ($team) {
+            $team->videos()->update(['team_id' => null]);
+            $team->delete();
+        });
     }
 
     public function paginateVideos(Team $team, int $perPage = 20): LengthAwarePaginator

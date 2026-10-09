@@ -13,7 +13,13 @@ class TeamPolicy
         return $team->hasMember($user);
     }
 
-    /** 削除・メンバー削除: オーナーのみ */
+    /** メンバー削除: オーナーは誰でも、メンバーは自分自身のみ（脱退） */
+    public function removeMember(User $actor, Team $team, User $target): bool
+    {
+        return $team->isOwner($actor) || $actor->id === $target->id;
+    }
+
+    /** チーム削除: オーナーのみ */
     public function manage(User $user, Team $team): bool
     {
         return $team->isOwner($user);
