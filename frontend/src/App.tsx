@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { Layout } from './components/Layout';
+import { OfflineBanner } from './components/OfflineBanner';
 import { postLoginPath } from './lib/pendingInvite';
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
@@ -30,6 +31,7 @@ function GuestOnly() {
 export function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <Routes>
         <Route element={<GuestOnly />}>
           <Route path="/login" element={<LoginPage />} />

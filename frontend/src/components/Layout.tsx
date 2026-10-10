@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { getEcho } from '../lib/echo';
 import { useAuthStore } from '../store/auth';
+import { InstallButton } from './InstallButton';
 import { RealtimeBadge } from './RealtimeBadge';
 
 export function Layout() {
@@ -31,6 +32,7 @@ export function Layout() {
         </Link>
         <nav className="app-nav">
           <RealtimeBadge />
+          <InstallButton />
           <Link to="/" className="link">動画</Link>
           <Link to="/teams" className="link">チーム</Link>
           <button className="btn btn-ghost btn-sm" onClick={handleLogout}>
