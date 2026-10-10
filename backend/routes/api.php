@@ -4,6 +4,7 @@ use App\Http\Controllers\AnnotationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ClipController;
 use App\Http\Controllers\CommentController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ShareController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\VideoController;
@@ -11,6 +12,9 @@ use App\Http\Controllers\VideoUploadController;
 use Illuminate\Support\Facades\Route;
 
 // ===== 認証不要 =====
+
+// ヘルスチェック（DB 接続確認。稼働監視・Railway healthcheck 用）
+Route::get('/health', HealthController::class);
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
 
@@ -18,7 +22,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 Route::get('/share/{token}', [ShareController::class, 'show']);
 
 // 切り抜き動画ダウンロード（LINE共有用・認証不要）
-Route::get('/clips/{clip}/download', [ClipController::class, 'download']);
+Route::get('/clips/{clip}/download/{token}', [ClipController::class, 'download']);
 
 // ===== 認証必須 =====
 Route::middleware('auth:sanctum')->group(function () {
@@ -28,16 +32,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/videos', [VideoController::class, 'index']);
     Route::post('/videos', [VideoController::class, 'store']);
     Route::post('/videos/upload', [VideoUploadController::class, 'store']);
+    Route::get('/videos/{video}', [VideoController::class, 'show']);
     Route::delete('/videos/{video}', [VideoController::class, 'destroy']);
 
     // チーム（F17）
     Route::get('/teams', [TeamController::class, 'index']);
     Route::post('/teams', [TeamController::class, 'store']);
+    Route::post('/teams/join', [TeamController::class, 'join']);
     Route::get('/teams/invite/{token}', [TeamController::class, 'invite']);
     Route::get('/teams/{team}', [TeamController::class, 'show']);
     Route::delete('/teams/{team}', [TeamController::class, 'destroy']);
-    Route::post('/teams/{team}/join', [TeamController::class, 'join']);
-    Route::delete('/teams/{team}/members/me', [TeamController::class, 'leave']);
     Route::delete('/teams/{team}/members/{user}', [TeamController::class, 'removeMember']);
     Route::get('/teams/{team}/videos', [TeamController::class, 'videos']);
 

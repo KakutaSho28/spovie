@@ -12,7 +12,9 @@ class BroadcastServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Broadcast::routes();
+        // API は /api 配下のみ公開する構成のため、認証エンドポイントも /api/broadcasting/auth に置く。
+        // 認証は Bearer トークン（Sanctum）。Echo の authorizer から呼ばれる。
+        Broadcast::routes(['prefix' => 'api', 'middleware' => ['auth:sanctum']]);
 
         require base_path('routes/channels.php');
     }

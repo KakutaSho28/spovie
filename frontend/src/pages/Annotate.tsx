@@ -7,10 +7,12 @@ import {
   DrawTool,
 } from '../components/AnnotationCanvas';
 import { ClipModal } from '../components/ClipModal';
+import { CommentThread } from '../components/CommentThread';
 import { TimeInput } from '../components/TimeInput';
 import { useHtml5VideoLoop } from '../hooks/useHtml5VideoLoop';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
-import type { Annotation, Video } from '../types';
+import type { Annotation, CanvasData, Video } from '../types';
 
 const COLORS = ['#ff3b30', '#ffd60a', '#ffffff'];
 
@@ -21,6 +23,7 @@ export function AnnotatePage() {
   const navigate = useNavigate();
 
   const [video, setVideo] = useState<Video | null>(null);
+  const [loadError, setLoadError] = useState('');
   const [startSeconds, setStartSeconds] = useState(0);
   const [endSeconds, setEndSeconds] = useState(10);
   const [looping, setLooping] = useState(false);
@@ -32,6 +35,7 @@ export function AnnotatePage() {
   const [drawing, setDrawing] = useState(false);
   const [clipModalOpen, setClipModalOpen] = useState(false);
   const [savedAnnotationId, setSavedAnnotationId] = useState<number | null>(null);
+  const [pendingCanvasData, setPendingCanvasData] = useState<CanvasData | null>(null);
   const [startTimeValid, setStartTimeValid] = useState(true);
   const [endTimeValid, setEndTimeValid] = useState(true);
 
@@ -41,13 +45,25 @@ export function AnnotatePage() {
   const [wrapSize, setWrapSize] = useState({ width: 0, height: 0 });
 
   const isUpload = video?.type === 'upload';
+  const online = useOnlineStatus();
 
   // ----- 動画情報の取得 -----
   useEffect(() => {
-    apiClient.get('/videos').then((res) => {
-      const found = (res.data.data as Video[]).find((v) => v.id === Number(videoId));
-      setVideo(found ?? null);
-    });
+    apiClient
+      .get<{ data: Video }>(`/videos/${videoId}`)
+      .then((res) => setVideo(res.data.data))
+      .catch((err) => {
+        const status = err.response?.status;
+        setLoadError(
+          !err.response
+            ? 'オフラインのためこの動画を開けません。ネットワークに接続してからもう一度お試しください。'
+            : status === 403
+            ? 'この動画を閲覧する権限がありません'
+            : status === 404
+              ? '動画が見つかりません'
+              : '動画の読み込みに失敗しました',
+        );
+      });
   }, [videoId]);
 
   // ----- 既存アノテーションの読み込み（「開く」から来た場合） -----
@@ -62,9 +78,16 @@ export function AnnotatePage() {
       setEndSeconds(found.end_seconds);
       setComment(found.comment ?? '');
       setSavedAnnotationId(found.id);
-      window.setTimeout(() => canvasRef.current?.loadCanvasData(found.canvas_data), 600);
+      setPendingCanvasData(found.canvas_data);
     });
   }, [annotationId, videoId]);
+
+  // キャンバスのサイズが確定してから描画を復元する
+  useEffect(() => {
+    if (!pendingCanvasData || wrapSize.width === 0) return;
+    canvasRef.current?.loadCanvasData(pendingCanvasData);
+    setPendingCanvasData(null);
+  }, [pendingCanvasData, wrapSize.width]);
 
   // ----- ResizeObserver: プレーヤーとCanvasのサイズを同期 -----
   useEffect(() => {
@@ -189,6 +212,7 @@ export function AnnotatePage() {
     }
   };
 
+  if (loadError) return <p className="error-msg">{loadError}</p>;
   if (!video) return <p className="muted">読み込み中...</p>;
 
   return (
@@ -302,13 +326,36 @@ export function AnnotatePage() {
       </div>
 
       {error && <p className="error-msg">{error}</p>}
+      {!online && (
+        <p className="error-msg">
+          オフラインです。{isUpload ? '' : 'YouTube の再生と'}アノテーションの保存には接続が必要です（描画の操作はできますが、保存は接続後に行ってください）。
+        </p>
+      )}
 
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+      {/* 保存済みのアノテーションにはコメントスレッドを表示（リアルタイム更新） */}
+      {savedAnnotationId && (
+        <>
+          <h2 className="section-title">コメント</h2>
+          <CommentThread annotationId={savedAnnotationId} />
+        </>
+      )}
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving || !online}
+          title={online ? undefined : 'オフラインのため保存できません'}
+        >
           {saving ? '保存中...' : '保存する'}
         </button>
         {isUpload && (
-          <button className="btn btn-primary" onClick={handleClipSave} disabled={saving}>
+          <button
+            className="btn btn-primary"
+            onClick={handleClipSave}
+            disabled={saving || !online}
+            title={online ? undefined : 'オフラインのため保存できません'}
+          >
             切り抜き保存
           </button>
         )}

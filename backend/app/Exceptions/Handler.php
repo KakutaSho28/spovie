@@ -3,6 +3,9 @@
 namespace App\Exceptions;
 
 use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
+use App\Exceptions\ServiceException;
+use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Throwable;
 
 class Handler extends ExceptionHandler
@@ -25,6 +28,18 @@ class Handler extends ExceptionHandler
     {
         $this->reportable(function (Throwable $e) {
             //
+        });
+
+        // Service 層の業務ルール違反を { "message": ... } で返す
+        $this->renderable(function (ServiceException $e) {
+            return response()->json(['message' => $e->getMessage()], $e->status);
+        });
+
+        // Policy の拒否（AuthorizationException → AccessDeniedHttpException）を API 共通の 403 形式で返す
+        $this->renderable(function (AccessDeniedHttpException $e, Request $request) {
+            if ($request->is('api/*')) {
+                return response()->json(['message' => 'この操作は許可されていません'], 403);
+            }
         });
     }
 }

@@ -1,6 +1,8 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import { useAuthStore } from './store/auth';
 import { Layout } from './components/Layout';
+import { OfflineBanner } from './components/OfflineBanner';
+import { postLoginPath } from './lib/pendingInvite';
 import { LoginPage } from './pages/Login';
 import { RegisterPage } from './pages/Register';
 import { VideosPage } from './pages/Videos';
@@ -20,15 +22,16 @@ function RequireAuth() {
   return token ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
-/** 逆ガード：ログイン済みなら S03 へ */
+/** 逆ガード：ログイン済みなら S03 へ（保留中の招待があれば参加ページへ） */
 function GuestOnly() {
   const token = useAuthStore((s) => s.token);
-  return token ? <Navigate to="/" replace /> : <Outlet />;
+  return token ? <Navigate to={postLoginPath()} replace /> : <Outlet />;
 }
 
 export function App() {
   return (
     <BrowserRouter>
+      <OfflineBanner />
       <Routes>
         <Route element={<GuestOnly />}>
           <Route path="/login" element={<LoginPage />} />
@@ -37,6 +40,9 @@ export function App() {
 
         {/* S07 共有ページ（認証不要） */}
         <Route path="/share/:token" element={<SharePage />} />
+
+        {/* 招待リンク: 未ログインならログイン後に戻って参加する（ガードの外に置く） */}
+        <Route path="/teams/join/:token" element={<TeamJoinPage />} />
 
         <Route element={<RequireAuth />}>
           <Route element={<Layout />}>
@@ -47,7 +53,6 @@ export function App() {
             <Route path="/clips/:clipId" element={<ClipStatusPage />} />
             <Route path="/teams" element={<TeamsPage />} />
             <Route path="/teams/new" element={<TeamNewPage />} />
-            <Route path="/teams/join/:token" element={<TeamJoinPage />} />
             <Route path="/teams/:teamId" element={<TeamDetailPage />} />
           </Route>
         </Route>

@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Services\MediaStorageService;
 
 class Video extends Model
 {
@@ -43,9 +45,38 @@ class Video extends Model
         return $this->hasMany(Clip::class);
     }
 
+    /**
+     * ユーザーが閲覧できる動画: 自分の個人動画 + 所属チームの動画
+     */
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        return $query->where(function (Builder $q) use ($user) {
+            $q->where(fn (Builder $personal) => $personal->where('user_id', $user->id)->whereNull('team_id'))
+                ->orWhereIn('team_id', $user->teams()->select('teams.id'));
+        });
+    }
+
+    /** 個人動画（チームに属さない自分の動画） */
+    public function scopePersonalOf(Builder $query, User $user): Builder
+    {
+        return $query->where('user_id', $user->id)->whereNull('team_id');
+    }
+
     public function isUpload(): bool
     {
         return $this->type === self::TYPE_UPLOAD;
+    }
+
+    /**
+     * アップロード動画の再生URL（YouTube動画は null）
+     */
+    public function fileUrl(): ?string
+    {
+        if (! $this->isUpload() || ! $this->file_path) {
+            return null;
+        }
+
+        return app(MediaStorageService::class)->playbackUrl($this->file_path);
     }
 
     public function canBeAccessedBy(User $user): bool
