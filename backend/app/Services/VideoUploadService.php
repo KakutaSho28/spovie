@@ -20,11 +20,14 @@ class VideoUploadService
 
         $path = $this->media->disk()->putFileAs('videos', $file, Str::uuid() . '.mp4');
 
-        return $user->videos()->create([
+        $video = $user->videos()->create([
             'team_id' => $teamId,
             'type' => Video::TYPE_UPLOAD,
             'file_path' => $path,
             'title' => $title,
         ]);
+
+        // レスポンスの team.name を一覧・詳細と揃えるため、チームを読み込んでおく
+        return $video->load('team');
     }
 }
