@@ -39,12 +39,15 @@ class VideoService
     {
         $this->assertCanUseTeam($user, $teamId);
 
-        return $user->videos()->create([
+        $video = $user->videos()->create([
             'team_id' => $teamId,
             'type' => Video::TYPE_YOUTUBE,
             'youtube_video_id' => $this->extractYoutubeVideoId($youtubeUrl),
             'title' => $title,
         ]);
+
+        // レスポンスの team.name を一覧・詳細と揃えるため、チームを読み込んでおく
+        return $video->load('team');
     }
 
     public function delete(Video $video): void

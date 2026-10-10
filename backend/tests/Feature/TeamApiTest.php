@@ -192,7 +192,9 @@ class TeamApiTest extends TestCase
         Sanctum::actingAs($this->member);
         $this->postJson('/api/videos', $payload + ['team_id' => $this->team->id])
             ->assertCreated()
-            ->assertJsonPath('data.team.id', $this->team->id);
+            ->assertJsonPath('data.team.id', $this->team->id)
+            // 登録直後のレスポンスにもチーム名が入る（一覧・詳細と同じ形）
+            ->assertJsonPath('data.team.name', $this->team->name);
 
         Sanctum::actingAs($this->outsider);
         $this->postJson('/api/videos', $payload + ['team_id' => $this->team->id])->assertForbidden();

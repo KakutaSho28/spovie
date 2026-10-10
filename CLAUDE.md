@@ -116,6 +116,14 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 - E2E は Chromium の `setOffline()` が Service Worker に効かない点に注意（モック API サーバー側で接続を切る）。詳細・Lighthouse 結果は `docs/pwa.md`。
 - アイコンは `frontend/public/icons`（再生成: `node scripts/generate-icons.mjs`）。
 
+## Docs（WP7）
+
+- 設計書は `docs/`（要件定義 → 基本設計 → 詳細設計、API 仕様、環境構築、デプロイ、PWA、自己評価）。索引は `docs/README.md`。**Markdown が正本**。
+- **`docs/api-endpoints.md` は自動生成**。直接編集しない。ルートや FormRequest を変えたら `backend/docs/api-examples.php` に説明・例を追加/更新し、`cd backend && php artisan docs:api` を実行して一緒にコミットする（忘れると `ApiDocsTest` / `ApiContractTest` が CI で落ちる）。
+- DB のテーブルやカラムを変えたら `docs/02-basic-design.md` の ER 図（Mermaid）も更新する。画面を追加したら `docs/03-detailed-design.md` の画面一覧と遷移図を更新する。
+- 公開デモ用のシード: `php artisan db:seed`（冪等、YouTube 動画のみ）。本番では `SEED_DEMO=true`。デモのパスワード等は `config/demo.php` 経由で読む。
+- `docs/self-assessment.md` は「実装・テスト済み」と「実環境で確認済み」を区別して、事実だけを書く。確認していないことを確認済みと書かない。
+
 ## Copyright policy（変更禁止）
 
 - **YouTube 動画**: アノテーション + 共有リンクのみ。切り抜き・動画データの保存はしない（座標データのみ保存）。

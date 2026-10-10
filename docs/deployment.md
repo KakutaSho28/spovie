@@ -114,6 +114,8 @@ bash scripts/smoke-test.sh https://<railway-domain>/api https://<vercel-domain>
 | `CORS_ALLOWED_ORIGINS` | `https://<vercel-domain>` | カンマ区切り。ワイルドカード不可 |
 | `CORS_ALLOWED_ORIGINS_PATTERNS` | （任意）正規表現 | Vercel プレビュー用 |
 | `SANCTUM_STATEFUL_DOMAINS` | `<vercel-domain>`（ホスト名のみ） | Bearer トークン認証のため実質未使用だが設定しておく |
+| `SEED_DEMO` | `true`（デモ公開時のみ） | 起動時に公開デモ用のデータを投入する（冪等）。デモアカウントは README 参照 |
+| `DEMO_PASSWORD` | （任意） | デモアカウントのパスワードを変えたいとき。既定は README に記載 |
 | `UPLOAD_MAX_MB` | `200` | 既定値。変更時は `backend/docker/{php.ini,nginx.conf.template}` も更新 |
 | `MEDIA_URL_TTL_MINUTES` | `60` | 署名付きURLの有効期限 |
 | `MEDIA_TEMPORARY_URLS` | （空） | s3 では自動的に署名URL。公開バケット運用なら `false` |
