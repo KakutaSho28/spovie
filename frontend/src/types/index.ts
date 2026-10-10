@@ -12,6 +12,14 @@ export type Video = {
   created_at: string;
 };
 
+/** ページ送りのメタ情報（Laravel のページネーションの meta の一部） */
+export type PageMeta = {
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+};
+
 /** 描画オブジェクト1つ分（Fabric.js の toJSON 形式。保存時サイズの絶対座標） */
 export type CanvasObject = Record<string, unknown>;
 

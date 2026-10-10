@@ -31,6 +31,7 @@ class VideoService
         return $query
             ->with('team')
             ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate($perPage);
     }
 
