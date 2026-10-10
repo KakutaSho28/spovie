@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
+import { OfflineFallback } from '../components/OfflineFallback';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import type { Team, Video } from '../types';
 
 export function VideosPage() {
@@ -8,6 +10,8 @@ export function VideosPage() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const online = useOnlineStatus();
   const teamFilter = searchParams.get('team') ?? 'all';
 
   // フィルタはサーバー側で行う（一覧は 20 件ずつのページングのため、クライアント側で絞ると取りこぼす）
@@ -21,8 +25,10 @@ export function VideosPage() {
     try {
       const res = await apiClient.get<{ data: Video[] }>('/videos', { params });
       setVideos(res.data.data);
+      setFailed(false);
     } catch {
       setVideos([]);
+      setFailed(true);
     } finally {
       setLoading(false);
     }
@@ -76,6 +82,12 @@ export function VideosPage() {
 
       {loading ? (
         <p className="muted">読み込み中...</p>
+      ) : failed ? (
+        online ? (
+          <p className="error-msg">動画一覧を取得できませんでした。</p>
+        ) : (
+          <OfflineFallback what="動画一覧" onRetry={fetchVideos} />
+        )
       ) : videos.length === 0 ? (
         <div className="empty">
           <p>動画がまだありません。</p>
