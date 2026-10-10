@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { CommentThread } from '../components/CommentThread';
+import { OfflineFallback } from '../components/OfflineFallback';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useChannelEvent, useOnReconnect } from '../hooks/useRealtime';
 import type { Annotation } from '../types';
 import { formatTime } from '../utils/time';
@@ -11,13 +13,21 @@ export function AnnotationsPage() {
   const navigate = useNavigate();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const online = useOnlineStatus();
   const [toast, setToast] = useState('');
   const [openComments, setOpenComments] = useState<number | null>(null);
 
   const fetchAnnotations = async () => {
-    const res = await apiClient.get(`/videos/${videoId}/annotations`);
-    setAnnotations(res.data.data);
-    setLoading(false);
+    try {
+      const res = await apiClient.get(`/videos/${videoId}/annotations`);
+      setAnnotations(res.data.data);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -70,6 +80,12 @@ export function AnnotationsPage() {
 
       {loading ? (
         <p className="muted">読み込み中...</p>
+      ) : failed ? (
+        online ? (
+          <p className="error-msg">アノテーション一覧を取得できませんでした。</p>
+        ) : (
+          <OfflineFallback what="アノテーション一覧" onRetry={fetchAnnotations} />
+        )
       ) : annotations.length === 0 ? (
         <div className="empty">
           <p>まだアノテーションがありません。作成してみましょう！</p>
