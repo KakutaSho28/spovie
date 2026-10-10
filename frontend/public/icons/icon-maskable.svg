@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Spovie">
+  <!-- maskable: 背景は全面塗り、図形は中央 80%（セーフゾーン）に収める -->
+  <rect width="512" height="512" fill="#101513"/>
+  <g transform="translate(256 256) scale(0.72) translate(-256 -256)">
+    <path d="M196 150 L196 362 L372 256 Z" fill="#ff8a3d"/>
+    <path d="M110 396 C160 356 200 430 256 392 S352 360 402 398" fill="none" stroke="#ffffff" stroke-width="22" stroke-linecap="round"/>
+    <circle cx="402" cy="398" r="16" fill="#ffffff"/>
+  </g>
+</svg>
