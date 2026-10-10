@@ -8,6 +8,12 @@ envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 cd /var/www/html
 php artisan migrate --force
+
+# 公開デモ用のデータ（デモユーザー・デモチーム・YouTube 動画・アノテーション・コメント）を投入する。冪等なので毎回起動時に実行してよい
+if [ "${SEED_DEMO:-}" = "true" ]; then
+    php artisan db:seed --force
+fi
+
 php artisan config:cache
 php artisan route:cache
 
