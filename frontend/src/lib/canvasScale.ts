@@ -16,13 +16,16 @@ export function scaleCanvasObjects(data: CanvasData, width: number, height: numb
 
   return data.objects.map((obj) => {
     const absolute = obj.__normalized ? fromLegacyNormalized(obj, baseWidth, baseHeight) : obj;
-    return {
-      ...absolute,
-      left: mul(absolute.left, sx),
-      top: mul(absolute.top, sy),
-      scaleX: mul(absolute.scaleX, sx),
-      scaleY: mul(absolute.scaleY, sy),
-    };
+    const scaled: CanvasObject = { ...absolute };
+
+    // 位置は、ある場合だけ変換する（無いキーを undefined で上書きすると、Fabric の既定値が効かず描画されない）
+    if (typeof absolute.left === 'number') scaled.left = absolute.left * sx;
+    if (typeof absolute.top === 'number') scaled.top = absolute.top * sy;
+    // 拡大率は、無ければ既定値 1 として扱う（Fabric の toJSON は常に出力するが、手で作ったデータには無いことがある）
+    scaled.scaleX = (typeof absolute.scaleX === 'number' ? absolute.scaleX : 1) * sx;
+    scaled.scaleY = (typeof absolute.scaleY === 'number' ? absolute.scaleY : 1) * sy;
+
+    return scaled;
   });
 }
 
