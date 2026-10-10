@@ -184,3 +184,20 @@ test('legacy normalized data (__normalized) is restored at the saved geometry', 
   const [atHalf] = scaleCanvasObjects(legacy, 500, 250);
   expect(atHalf).toMatchObject({ left: 100, top: 50, scaleX: 0.5, scaleY: 0.5 });
 });
+
+test('scaleX / scaleY / left / top が無い図形でも、undefined で上書きせずに拡大縮小する', () => {
+  // 手で作ったデータ（デモ用シード等）は、Fabric の toJSON と違って scale を持たないことがある
+  const data = {
+    canvas_width: 1000,
+    canvas_height: 500,
+    objects: [{ type: 'Circle', radius: 40 }, { type: 'IText', text: 'x', left: 100, top: 50 }],
+  };
+
+  const [circle, text] = scaleCanvasObjects(data, 500, 250);
+
+  expect(circle).toMatchObject({ scaleX: 0.5, scaleY: 0.5, radius: 40 });
+  expect(circle).not.toHaveProperty('left');
+  expect(circle).not.toHaveProperty('top');
+  expect(text).toMatchObject({ left: 50, top: 25, scaleX: 0.5, scaleY: 0.5 });
+  for (const value of Object.values(circle)) expect(value).not.toBeUndefined();
+});
