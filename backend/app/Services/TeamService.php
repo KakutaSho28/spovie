@@ -96,6 +96,6 @@ class TeamService
 
     public function paginateVideos(Team $team, int $perPage = 20): LengthAwarePaginator
     {
-        return $team->videos()->with('team')->orderByDesc('created_at')->paginate($perPage);
+        return $team->videos()->with('team')->orderByDesc('created_at')->orderByDesc('id')->paginate($perPage);
     }
 }

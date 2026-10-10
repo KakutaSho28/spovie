@@ -65,6 +65,49 @@ class VideoListFilterTest extends TestCase
         $this->getJson("/api/videos?team_id={$foreign->id}")->assertForbidden();
     }
 
+    public function test_list_is_paginated_20_per_page_with_page_meta(): void
+    {
+        // setUp の2件（個人1 + チーム1）に加えて 43 件 → 合計 45 件
+        Video::factory()->count(43)->for($this->me)->create();
+
+        $page1 = $this->getJson('/api/videos')->assertOk();
+        $page1->assertJsonCount(20, 'data')
+            ->assertJsonPath('meta.current_page', 1)
+            ->assertJsonPath('meta.per_page', 20)
+            ->assertJsonPath('meta.last_page', 3)
+            ->assertJsonPath('meta.total', 45);
+
+        $this->getJson('/api/videos?page=3')->assertOk()->assertJsonCount(5, 'data')->assertJsonPath('meta.current_page', 3);
+
+        // ページをまたいでも重複・欠落がない（作成日時の新しい順）
+        $all = collect([1, 2, 3])->flatMap(fn ($page) => collect($this->getJson("/api/videos?page={$page}")->json('data'))->pluck('id'));
+        $this->assertCount(45, $all->unique());
+    }
+
+    public function test_page_beyond_the_last_returns_empty_data_with_last_page_meta(): void
+    {
+        $this->getJson('/api/videos?page=9')
+            ->assertOk()
+            ->assertJsonCount(0, 'data')
+            ->assertJsonPath('meta.last_page', 1);
+    }
+
+    public function test_pagination_respects_filters(): void
+    {
+        Video::factory()->count(25)->for($this->me)->create();
+
+        $this->getJson('/api/videos?scope=personal')
+            ->assertJsonPath('meta.total', 26)
+            ->assertJsonPath('meta.last_page', 2);
+        $this->getJson("/api/videos?team_id={$this->team->id}")->assertJsonPath('meta.total', 1);
+    }
+
+    public function test_invalid_page_is_rejected(): void
+    {
+        $this->getJson('/api/videos?page=0')->assertUnprocessable();
+        $this->getJson('/api/videos?page=abc')->assertUnprocessable();
+    }
+
     public function test_invalid_scope_is_rejected(): void
     {
         $this->getJson('/api/videos?scope=everything')->assertUnprocessable();
