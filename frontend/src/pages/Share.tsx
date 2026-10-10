@@ -27,6 +27,9 @@ export function SharePage() {
       .catch((err) => {
         if (err.response?.status === 410) {
           setErrorMessage('この共有リンクは有効期限が切れています');
+        } else if (!err.response) {
+          // サーバーに届かなかった（オフラインなど）。リンクが無効とは限らない
+          setErrorMessage('オフラインのため共有を表示できません。ネットワークに接続してからもう一度開いてください。');
         } else {
           setErrorMessage('共有リンクが見つかりません');
         }

@@ -108,6 +108,14 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
 - テスト: バックエンドは `Event::fake` とダミーキー（Pusher への通信なし）。フロントの E2E は `e2e/helpers/fakePusher.ts` で WebSocket を偽の Pusher サーバーに差し替える（キー不要）。リアルタイムの E2E は Pusher キー設定済みの dev サーバー（ポート 5175）を使う。
 - ローカルで実際の Pusher を試すには `backend/.env`（`BROADCAST_DRIVER=pusher` + `PUSHER_*`）、root `.env`（`VITE_PUSHER_*`）を設定し、queue worker を起動しておく。
 
+## PWA（WP6）
+
+- `vite-plugin-pwa`（`frontend/vite.config.ts`）。アプリシェルはプリキャッシュ、`GET /api/*` は NetworkFirst（最大5分）。**動画ファイル・クリップ DL・`/api/broadcasting/auth` は絶対にキャッシュしない**（NetworkOnly を先に並べる）。
+- API キャッシュ（`spovie-api`）はユーザー固有データなので、ログイン/ログアウト時に破棄する（`src/lib/pwa.ts`、`store/auth.ts`）。
+- オフライン UI: `OfflineBanner`、`OfflineFallback`、`useOnlineStatus`。接続が必要な操作（保存・投稿・YouTube 再生）はオフライン中に無効化し、理由を明示する。
+- E2E は Chromium の `setOffline()` が Service Worker に効かない点に注意（モック API サーバー側で接続を切る）。詳細・Lighthouse 結果は `docs/pwa.md`。
+- アイコンは `frontend/public/icons`（再生成: `node scripts/generate-icons.mjs`）。
+
 ## Copyright policy（変更禁止）
 
 - **YouTube 動画**: アノテーション + 共有リンクのみ。切り抜き・動画データの保存はしない（座標データのみ保存）。

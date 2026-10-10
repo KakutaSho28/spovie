@@ -6,3 +6,4 @@ backend/vendor/
 frontend/dist/
 frontend/test-results/
 frontend/playwright-report/
+frontend/dist-e2e/

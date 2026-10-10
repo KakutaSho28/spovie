@@ -10,6 +10,7 @@ import { ClipModal } from '../components/ClipModal';
 import { CommentThread } from '../components/CommentThread';
 import { TimeInput } from '../components/TimeInput';
 import { useHtml5VideoLoop } from '../hooks/useHtml5VideoLoop';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
 import { useYouTubePlayer } from '../hooks/useYouTubePlayer';
 import type { Annotation, CanvasData, Video } from '../types';
 
@@ -44,6 +45,7 @@ export function AnnotatePage() {
   const [wrapSize, setWrapSize] = useState({ width: 0, height: 0 });
 
   const isUpload = video?.type === 'upload';
+  const online = useOnlineStatus();
 
   // ----- 動画情報の取得 -----
   useEffect(() => {
@@ -53,7 +55,9 @@ export function AnnotatePage() {
       .catch((err) => {
         const status = err.response?.status;
         setLoadError(
-          status === 403
+          !err.response
+            ? 'オフラインのためこの動画を開けません。ネットワークに接続してからもう一度お試しください。'
+            : status === 403
             ? 'この動画を閲覧する権限がありません'
             : status === 404
               ? '動画が見つかりません'
@@ -322,6 +326,11 @@ export function AnnotatePage() {
       </div>
 
       {error && <p className="error-msg">{error}</p>}
+      {!online && (
+        <p className="error-msg">
+          オフラインです。{isUpload ? '' : 'YouTube の再生と'}アノテーションの保存には接続が必要です（描画の操作はできますが、保存は接続後に行ってください）。
+        </p>
+      )}
 
       {/* 保存済みのアノテーションにはコメントスレッドを表示（リアルタイム更新） */}
       {savedAnnotationId && (
@@ -332,11 +341,21 @@ export function AnnotatePage() {
       )}
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
-        <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+        <button
+          className="btn btn-primary"
+          onClick={handleSave}
+          disabled={saving || !online}
+          title={online ? undefined : 'オフラインのため保存できません'}
+        >
           {saving ? '保存中...' : '保存する'}
         </button>
         {isUpload && (
-          <button className="btn btn-primary" onClick={handleClipSave} disabled={saving}>
+          <button
+            className="btn btn-primary"
+            onClick={handleClipSave}
+            disabled={saving || !online}
+            title={online ? undefined : 'オフラインのため保存できません'}
+          >
             切り抜き保存
           </button>
         )}

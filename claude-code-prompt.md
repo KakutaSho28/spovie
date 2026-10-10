@@ -5,13 +5,13 @@
 Finish **Spovie** (sports video annotation web app) to a publicly deployed, demo-ready v1 within a 3-day weekend.
 The result is evaluated against this rubric, and we are aiming for the top score:
 
-| Score | Criteria |
-|---|---|
-| 5 | All v1 features are done and all deliverables are submitted |
-| 4 | PWA and real-time features are partly done, other main features done |
-| 3 | Basic features (list / detail / posting) are done and the app is publicly accessible |
-| 2 | Frontend ↔ backend connectivity is verified and design docs are complete |
-| 1 | DB design and environment setup only |
+| Score | Criteria                                                                             |
+| ----- | ------------------------------------------------------------------------------------ |
+| 5     | All v1 features are done and all deliverables are submitted                          |
+| 4     | PWA and real-time features are partly done, other main features done                 |
+| 3     | Basic features (list / detail / posting) are done and the app is publicly accessible |
+| 2     | Frontend ↔ backend connectivity is verified and design docs are complete             |
+| 1     | DB design and environment setup only                                                 |
 
 Required deliverables: **(a) public site URL, (b) GitHub repository, (c) design docs (DB design, API definitions)**.
 Required skills to demonstrate: React + TypeScript, **PWA**, **Laravel 10 REST API + Pusher real-time**, **GitHub workflow, Vercel/Railway deployment**.
@@ -101,15 +101,15 @@ Tables (new migrations only):
 - `videos.team_id` nullable FK → teams (on delete set null)
 
 API (all `auth:sanctum`):
-| Method | URI | Notes |
-|---|---|---|
-| POST | /api/teams | creator becomes owner and first member |
-| GET | /api/teams | teams the user belongs to |
-| GET | /api/teams/{team} | details + members (members only) |
-| DELETE | /api/teams/{team} | owner only |
-| POST | /api/teams/join | body `invite_token`; idempotent |
+| Method | URI                              | Notes                                                            |
+| ------ | -------------------------------- | ---------------------------------------------------------------- |
+| POST   | /api/teams                       | creator becomes owner and first member                           |
+| GET    | /api/teams                       | teams the user belongs to                                        |
+| GET    | /api/teams/{team}                | details + members (members only)                                 |
+| DELETE | /api/teams/{team}                | owner only                                                       |
+| POST   | /api/teams/join                  | body `invite_token`; idempotent                                  |
 | DELETE | /api/teams/{team}/members/{user} | owner removes member; member may remove self; owner cannot leave |
-| GET | /api/teams/{team}/videos | members only |
+| GET    | /api/teams/{team}/videos         | members only                                                     |
 
 - `VideoController@index` returns personal videos plus videos of the user's teams (support `?team_id=` filter and `?scope=personal|all`). `POST /videos` and `/videos/upload` accept optional `team_id` (must be a team the user belongs to).
 - Authorization everywhere that touches a video/annotation/clip: owner **or** member of the video's team.
@@ -163,11 +163,11 @@ AI tracking (SAM3), court-map generation, external video-service integration (Ba
 
 ## 6. Suggested schedule
 
-| Day | Packages |
-|---|---|
+| Day | Packages                                            |
+| --- | --------------------------------------------------- |
 | Sat | WP0 → WP1 → WP2 → WP3 (end the day with a live URL) |
-| Sun | WP4 → WP5 |
-| Mon | WP6 → WP7, final production verification, fix-ups |
+| Sun | WP4 → WP5                                           |
+| Mon | WP6 → WP7, final production verification, fix-ups   |
 
 If time runs short, cut in this order: presigned direct upload (stretch), team member removal UI, PWA install button. Never cut WP3 (deploy), WP5 (real-time), or WP7 (deliverables).
 
