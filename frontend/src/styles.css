@@ -476,3 +476,15 @@ body {
   color: #101513;
   background: #ffd60a;
 }
+
+/* ----- ページ送り ----- */
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 24px 0 8px;
+}
+.pagination-ellipsis { padding: 0 4px; color: var(--muted, #9aa59f); }
+.pagination-total { margin-left: 8px; font-size: 13px; }
