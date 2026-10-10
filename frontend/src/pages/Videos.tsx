@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { OfflineFallback } from '../components/OfflineFallback';
+import { Pagination } from '../components/Pagination';
 import { useOnlineStatus } from '../hooks/useOnlineStatus';
-import type { Team, Video } from '../types';
+import type { PageMeta, Team, Video } from '../types';
+
+const PER_PAGE = 20;
 
 export function VideosPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -11,20 +14,37 @@ export function VideosPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [meta, setMeta] = useState<PageMeta | null>(null);
   const online = useOnlineStatus();
   const teamFilter = searchParams.get('team') ?? 'all';
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
 
-  // フィルタはサーバー側で行う（一覧は 20 件ずつのページングのため、クライアント側で絞ると取りこぼす）
+  const goToPage = (next: number) => {
+    const params = new URLSearchParams(searchParams);
+    if (next <= 1) params.delete('page');
+    else params.set('page', String(next));
+    setSearchParams(params);
+  };
+
+  // フィルタとページ送りはサーバー側で行う（20 件ずつ。クライアント側で絞ると取りこぼす）
   const fetchVideos = async () => {
-    const params =
+    const filter =
       teamFilter === 'all'
         ? {}
         : teamFilter === 'personal'
           ? { scope: 'personal' }
           : { team_id: Number(teamFilter) };
     try {
-      const res = await apiClient.get<{ data: Video[] }>('/videos', { params });
+      const res = await apiClient.get<{ data: Video[]; meta: PageMeta }>('/videos', {
+        params: { ...filter, page, per_page: PER_PAGE },
+      });
+      // 最後のページの動画を削除した等で、ページが範囲外になったら最終ページへ戻す
+      if (res.data.data.length === 0 && page > 1) {
+        goToPage(res.data.meta.last_page);
+        return;
+      }
       setVideos(res.data.data);
+      setMeta(res.data.meta);
       setFailed(false);
     } catch {
       setVideos([]);
@@ -42,7 +62,7 @@ export function VideosPage() {
     setLoading(true);
     fetchVideos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [teamFilter]);
+  }, [teamFilter, page]);
 
   const handleDelete = async (video: Video) => {
     const ok = window.confirm(
@@ -69,6 +89,7 @@ export function VideosPage() {
           value={teamFilter}
           onChange={(e) => {
             const next = e.target.value;
+            // フィルタを変えたら 1 ページ目に戻す
             setSearchParams(next === 'all' ? {} : { team: next });
           }}
         >
@@ -127,6 +148,15 @@ export function VideosPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {meta && !failed && (
+        <Pagination
+          currentPage={meta.current_page}
+          lastPage={meta.last_page}
+          total={meta.total}
+          onChange={goToPage}
+        />
       )}
     </>
   );
