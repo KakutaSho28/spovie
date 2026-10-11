@@ -138,7 +138,7 @@ cd frontend && npm run e2e             # Playwright（API はモック。初回�
   - scope: `backend` / `frontend` / `docker` / `ci` など（任意）
   - 本文（body）も日本語。「何を」より「なぜ」を書く
   - 例: `fix(frontend): 小さい画面でアノテーションの図形が拡大される問題を修正`
-  - 末尾の Co-Authored-By などのトレーラー行はそのまま残す
+  - **Co-Authored-By に Claude（AI）を入れない。** PR の説明にも「Generated with Claude Code」等の表記を入れない
 - **PR のタイトルと説明も日本語**で書く。
 - `main` への push が本番デプロイのトリガー（WP3 以降）。
 - 作業完了の前に必ず test / route:list / build を実行し、実行したものを報告する。
