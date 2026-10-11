@@ -1,34 +1,68 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
-import type { Team, Video } from '../types';
+import { OfflineFallback } from '../components/OfflineFallback';
+import { Pagination } from '../components/Pagination';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import type { PageMeta, Team, Video } from '../types';
+
+const PER_PAGE = 20;
 
 export function VideosPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [videos, setVideos] = useState<Video[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [meta, setMeta] = useState<PageMeta | null>(null);
+  const online = useOnlineStatus();
   const teamFilter = searchParams.get('team') ?? 'all';
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
 
+  const goToPage = (next: number) => {
+    const params = new URLSearchParams(searchParams);
+    if (next <= 1) params.delete('page');
+    else params.set('page', String(next));
+    setSearchParams(params);
+  };
+
+  // フィルタとページ送りはサーバー側で行う（20 件ずつ。クライアント側で絞ると取りこぼす）
   const fetchVideos = async () => {
-    const [videosRes, teamsRes] = await Promise.all([
-      apiClient.get('/videos'),
-      apiClient.get('/teams'),
-    ]);
-    setVideos(videosRes.data.data);
-    setTeams(teamsRes.data.data);
-    setLoading(false);
+    const filter =
+      teamFilter === 'all'
+        ? {}
+        : teamFilter === 'personal'
+          ? { scope: 'personal' }
+          : { team_id: Number(teamFilter) };
+    try {
+      const res = await apiClient.get<{ data: Video[]; meta: PageMeta }>('/videos', {
+        params: { ...filter, page, per_page: PER_PAGE },
+      });
+      // 最後のページの動画を削除した等で、ページが範囲外になったら最終ページへ戻す
+      if (res.data.data.length === 0 && page > 1) {
+        goToPage(res.data.meta.last_page);
+        return;
+      }
+      setVideos(res.data.data);
+      setMeta(res.data.meta);
+      setFailed(false);
+    } catch {
+      setVideos([]);
+      setFailed(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchVideos();
+    apiClient.get('/teams').then((res) => setTeams(res.data.data));
   }, []);
 
-  const filteredVideos = videos.filter((video) => {
-    if (teamFilter === 'all') return true;
-    if (teamFilter === 'personal') return video.team === null;
-    return video.team?.id === Number(teamFilter);
-  });
+  useEffect(() => {
+    setLoading(true);
+    fetchVideos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [teamFilter, page]);
 
   const handleDelete = async (video: Video) => {
     const ok = window.confirm(
@@ -55,6 +89,7 @@ export function VideosPage() {
           value={teamFilter}
           onChange={(e) => {
             const next = e.target.value;
+            // フィルタを変えたら 1 ページ目に戻す
             setSearchParams(next === 'all' ? {} : { team: next });
           }}
         >
@@ -68,14 +103,20 @@ export function VideosPage() {
 
       {loading ? (
         <p className="muted">読み込み中...</p>
-      ) : filteredVideos.length === 0 ? (
+      ) : failed ? (
+        online ? (
+          <p className="error-msg">動画一覧を取得できませんでした。</p>
+        ) : (
+          <OfflineFallback what="動画一覧" onRetry={fetchVideos} />
+        )
+      ) : videos.length === 0 ? (
         <div className="empty">
           <p>動画がまだありません。</p>
           <Link to="/videos/new" className="btn btn-primary">最初の動画を追加する</Link>
         </div>
       ) : (
         <div className="grid">
-          {filteredVideos.map((video) => (
+          {videos.map((video) => (
             <div className="card" key={video.id}>
               {video.type === 'youtube' && video.youtube_video_id ? (
                 <img
@@ -107,6 +148,15 @@ export function VideosPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {meta && !failed && (
+        <Pagination
+          currentPage={meta.current_page}
+          lastPage={meta.last_page}
+          total={meta.total}
+          onChange={goToPage}
+        />
       )}
     </>
   );

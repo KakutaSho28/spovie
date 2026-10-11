@@ -1,0 +1,28 @@
+{
+  "canvas_width": 1280,
+  "canvas_height": 720,
+  "objects": [
+    {
+      "type": "Circle",
+      "left": 420,
+      "top": 240,
+      "radius": 44,
+      "fill": "rgba(0,0,0,0)",
+      "stroke": "#ff3b30",
+      "strokeWidth": 4,
+      "originX": "left",
+      "originY": "top"
+    },
+    {
+      "type": "IText",
+      "text": "ここ！",
+      "left": 520,
+      "top": 200,
+      "fontSize": 32,
+      "fill": "#ffd60a",
+      "fontFamily": "sans-serif",
+      "originX": "left",
+      "originY": "top"
+    }
+  ]
+}

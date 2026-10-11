@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiClient } from '../api/client';
 import { CommentThread } from '../components/CommentThread';
+import { OfflineFallback } from '../components/OfflineFallback';
+import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useChannelEvent, useOnReconnect } from '../hooks/useRealtime';
 import type { Annotation } from '../types';
 import { formatTime } from '../utils/time';
 
@@ -10,13 +13,21 @@ export function AnnotationsPage() {
   const navigate = useNavigate();
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const online = useOnlineStatus();
   const [toast, setToast] = useState('');
   const [openComments, setOpenComments] = useState<number | null>(null);
 
   const fetchAnnotations = async () => {
-    const res = await apiClient.get(`/videos/${videoId}/annotations`);
-    setAnnotations(res.data.data);
-    setLoading(false);
+    try {
+      const res = await apiClient.get(`/videos/${videoId}/annotations`);
+      setAnnotations(res.data.data);
+      setFailed(false);
+    } catch {
+      setFailed(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -28,6 +39,15 @@ export function AnnotationsPage() {
     setToast(message);
     window.setTimeout(() => setToast(''), 2000);
   };
+
+  // ----- リアルタイム: 他の人が追加したアノテーションを即時反映 -----
+  // 通知は軽量（canvas_data なし）なので、一覧を取得し直す
+  useChannelEvent(`video.${videoId}`, 'annotation.created', () => {
+    fetchAnnotations().then(() => showToast('新しいアノテーションが追加されました'));
+  });
+  useOnReconnect(() => {
+    fetchAnnotations();
+  });
 
   const handleShare = async (annotation: Annotation) => {
     const res = await apiClient.post(`/annotations/${annotation.id}/share`, {
@@ -60,6 +80,12 @@ export function AnnotationsPage() {
 
       {loading ? (
         <p className="muted">読み込み中...</p>
+      ) : failed ? (
+        online ? (
+          <p className="error-msg">アノテーション一覧を取得できませんでした。</p>
+        ) : (
+          <OfflineFallback what="アノテーション一覧" onRetry={fetchAnnotations} />
+        )
       ) : annotations.length === 0 ? (
         <div className="empty">
           <p>まだアノテーションがありません。作成してみましょう！</p>

@@ -9,7 +9,7 @@ class TeamResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        $frontendUrl = rtrim(env('APP_FRONTEND_URL', config('app.url')), '/');
+        $frontendUrl = rtrim(config('app.frontend_url'), '/');
 
         return [
             'id' => $this->id,
